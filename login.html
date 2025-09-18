@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="az">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giriş - Depod</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Depod hesabınıza giriş yapın" />
+    <meta name="author" content="Depod" />
+
+    <!-- API Base Configuration -->
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Depod" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="96x96"
+      href="favicon/favicon.svg"
+    />
+    <link rel="apple-touch-icon" href="favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="favicon/site.webmanifest" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="index.html" class="nav-logo">
+          <img src="image/logo.png" alt="Depod Logo" class="logo-icon" />
+          <span class="logo-text" translate="no">DEPOD</span>
+        </a>
+
+        <div class="nav-menu" id="nav-menu">
+          <ul class="nav-list">
+            <li class="nav-item">
+              <a href="index.html" class="nav-link">Ana Səhifə</a>
+            </li>
+            <li class="nav-item">
+              <a href="products.html" class="nav-link">Məhsullar</a>
+            </li>
+            <li class="nav-item">
+              <a href="about.html" class="nav-link">Haqqımızda</a>
+            </li>
+            <li class="nav-item">
+              <a href="contact.html" class="nav-link">Əlaqə</a>
+            </li>
+            <li class="nav-item">
+              <a href="login.html" class="nav-link active">Giriş</a>
+            </li>
+            <li class="nav-item">
+              <a href="register.html" class="nav-link">Qeydiyyat</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-toggle" id="nav-toggle">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Login Section -->
+    <section class="auth-section">
+      <div class="container">
+        <div class="auth-container">
+          <div class="auth-card">
+            <div class="auth-header">
+              <h1 class="auth-title">Xoş gəlmisiniz</h1>
+              <p class="auth-subtitle">Hesabınıza daxil olun</p>
+            </div>
+
+            <form class="auth-form" id="loginForm">
+              <div class="form-group">
+                <label for="username">Email və ya telefon nömrəsi</label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  required
+                  placeholder="example@email.com və ya +994501234567"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="password">Parol</label>
+                <div class="password-input-container">
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    placeholder="Parolunuzu daxil edin"
+                  />
+                  <button
+                    type="button"
+                    class="password-toggle"
+                    id="passwordToggle"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-options">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="rememberMe" />
+                  <span class="checkmark"></span>
+                  <span class="checkbox-text">Məni xatırla</span>
+                </label>
+                <a href="#" class="forgot-password">Parolunu unutmusan?</a>
+              </div>
+
+              <!-- Demo Login Info -->
+              <div class="demo-login-info">
+                <h4>Demo Giriş Bilgiləri:</h4>
+                <div class="demo-accounts">
+                  <div class="demo-account">
+                    <strong>Email:</strong> demo@depod.az<br />
+                    <strong>Parol:</strong> 123456<br />
+                    <small>(Onaylanmış tələbə statusu)</small>
+                  </div>
+                  <div class="demo-account">
+                    <strong>Telefon:</strong> +994501234567<br />
+                    <strong>Parol:</strong> 123456<br />
+                    <small>(Eyni hesab)</small>
+                  </div>
+                  <div class="demo-account">
+                    <strong>Email:</strong> test@depod.az<br />
+                    <strong>Parol:</strong> test123<br />
+                    <small>(Gözləyən tələbə statusu)</small>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="btn btn-primary auth-btn"
+                id="loginBtn"
+              >
+                <span class="btn-text">Daxil ol</span>
+                <div class="btn-loader" style="display: none">
+                  <div class="spinner"></div>
+                </div>
+              </button>
+            </form>
+
+            <div class="auth-footer">
+              <p>
+                Hesabınız yoxdur?
+                <a href="register.html" class="auth-link">Qeydiyyatdan keçin</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <div class="footer-logo">
+              <img
+                src="image/logo.png"
+                alt="Depod Logo"
+                class="footer-logo-icon"
+              />
+              <span class="footer-logo-text" translate="no">DEPOD</span>
+            </div>
+            <p class="footer-description">
+              Keyfiyyətli texnologiya məhsulları ilə həyatınızı asanlaşdırın.
+            </p>
+          </div>
+
+          <div class="footer-section">
+            <h3 class="footer-section-title">Sürətli Linklər</h3>
+            <ul class="footer-links">
+              <li><a href="index.html">Ana Səhifə</a></li>
+              <li><a href="products.html">Məhsullar</a></li>
+              <li><a href="about.html">Haqqımızda</a></li>
+              <li><a href="contact.html">Əlaqə</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-section">
+            <h3 class="footer-section-title">Məhsullar</h3>
+            <ul class="footer-links">
+              <li><a href="products.html?category=powerbank">Powerbank</a></li>
+              <li><a href="products.html?category=earphone">Qulaqlıqlar</a></li>
+              <li>
+                <a href="products.html?category=charger">Şarj Cihazları</a>
+              </li>
+              <li>
+                <a href="products.html?category=car-charger">Avtomobil Şarj</a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="footer-section">
+            <h3 class="footer-section-title">Əlaqə</h3>
+            <ul class="footer-contact">
+              <li><i class="fas fa-phone"></i> +994 50 123 45 67</li>
+              <li><i class="fas fa-envelope"></i> info@depod.az</li>
+              <li><i class="fas fa-map-marker-alt"></i> Bakı, Azərbaycan</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; 2024 Depod. Bütün hüquqlar qorunur.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/login.js"></script>
+  </body>
+</html>

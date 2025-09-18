@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="az">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profil - Depod</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Depod istifadəçi profili" />
+    <meta name="author" content="Depod" />
+
+    <!-- API Base Configuration -->
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Depod" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="96x96"
+      href="favicon/favicon.svg"
+    />
+    <link rel="apple-touch-icon" href="favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="favicon/site.webmanifest" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="index.html" class="nav-logo">
+          <img src="image/logo.png" alt="Depod Logo" class="logo-icon" />
+          <span class="logo-text" translate="no">DEPOD</span>
+        </a>
+
+        <div class="nav-menu" id="nav-menu">
+          <ul class="nav-list">
+            <li class="nav-item">
+              <a href="index.html" class="nav-link">Ana Səhifə</a>
+            </li>
+            <li class="nav-item">
+              <a href="products.html" class="nav-link">Məhsullar</a>
+            </li>
+            <li class="nav-item">
+              <a href="about.html" class="nav-link">Haqqımızda</a>
+            </li>
+            <li class="nav-item">
+              <a href="contact.html" class="nav-link">Əlaqə</a>
+            </li>
+            <li class="nav-item profile-dropdown">
+              <a href="#" class="nav-link profile-toggle" id="profileToggle">
+                <span id="userNameDisplay">Profil</span>
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <div class="profile-dropdown-menu" id="profileDropdown">
+                <a href="profile.html" class="dropdown-item active">
+                  <i class="fas fa-user"></i> Profil
+                </a>
+                <a href="#" class="dropdown-item" id="logoutBtn">
+                  <i class="fas fa-sign-out-alt"></i> Çıxış
+                </a>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-toggle" id="nav-toggle">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Profile Section -->
+    <section class="profile-section">
+      <div class="container">
+        <div class="profile-container">
+          <!-- Profile Header -->
+          <div class="profile-header">
+            <div class="profile-avatar">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="profile-info">
+              <h1 class="profile-name" id="profileName">Loading...</h1>
+              <p class="profile-email" id="profileEmail">Loading...</p>
+            </div>
+          </div>
+
+          <!-- Profile Tabs -->
+          <div class="profile-tabs">
+            <button class="tab-btn active" data-tab="profile-info">
+              <i class="fas fa-user"></i>
+              <span>Profil Bilgiləri</span>
+            </button>
+            <button class="tab-btn" data-tab="password-reset">
+              <i class="fas fa-lock"></i>
+              <span>Parol Dəyişdirmə</span>
+            </button>
+            <button class="tab-btn" data-tab="promotions">
+              <i class="fas fa-gift"></i>
+              <span>Promosyonlar</span>
+            </button>
+          </div>
+
+          <!-- Tab Contents -->
+          <div class="tab-contents">
+            <!-- Profile Info Tab -->
+            <div class="tab-content active" id="profile-info">
+              <div class="profile-card">
+                <h2 class="card-title">Şəxsi Məlumatlar</h2>
+
+                <form class="profile-form" id="profileInfoForm">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="displayFirstName">Ad</label>
+                      <input
+                        type="text"
+                        id="displayFirstName"
+                        name="firstName"
+                        readonly
+                        placeholder="Loading..."
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="displayLastName">Soyad</label>
+                      <input
+                        type="text"
+                        id="displayLastName"
+                        name="lastName"
+                        readonly
+                        placeholder="Loading..."
+                      />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="displayEmail">Email</label>
+                    <input
+                      type="email"
+                      id="displayEmail"
+                      name="email"
+                      readonly
+                      placeholder="Loading..."
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="editPhone">Telefon nömrəsi</label>
+                    <div class="editable-field">
+                      <input
+                        type="tel"
+                        id="editPhone"
+                        name="phone"
+                        placeholder="Loading..."
+                      />
+                      <button type="button" class="edit-btn" id="editPhoneBtn">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="displayBirthDate">Doğum tarixi</label>
+                    <input
+                      type="date"
+                      id="displayBirthDate"
+                      name="birthDate"
+                      readonly
+                      placeholder="Loading..."
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="updatePhoneBtn"
+                    style="display: none"
+                  >
+                    <span class="btn-text">Telefonu yenilə</span>
+                    <div class="btn-loader" style="display: none">
+                      <div class="spinner"></div>
+                    </div>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Password Reset Tab -->
+            <div class="tab-content" id="password-reset">
+              <div class="profile-card">
+                <h2 class="card-title">Parol Dəyişdirmə</h2>
+
+                <form class="profile-form" id="passwordResetForm">
+                  <div class="form-group">
+                    <label for="currentPassword">Cari parol</label>
+                    <div class="password-input-container">
+                      <input
+                        type="password"
+                        id="currentPassword"
+                        name="currentPassword"
+                        required
+                        placeholder="Cari parolunuzu daxil edin"
+                      />
+                      <button
+                        type="button"
+                        class="password-toggle"
+                        id="currentPasswordToggle"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="newPassword">Yeni parol</label>
+                    <div class="password-input-container">
+                      <input
+                        type="password"
+                        id="newPassword"
+                        name="newPassword"
+                        required
+                        placeholder="Yeni parolunuzu daxil edin"
+                        minlength="6"
+                      />
+                      <button
+                        type="button"
+                        class="password-toggle"
+                        id="newPasswordToggle"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="confirmNewPassword">Yeni parol təkrarı</label>
+                    <div class="password-input-container">
+                      <input
+                        type="password"
+                        id="confirmNewPassword"
+                        name="confirmNewPassword"
+                        required
+                        placeholder="Yeni parolunuzu təkrar edin"
+                        minlength="6"
+                      />
+                      <button
+                        type="button"
+                        class="password-toggle"
+                        id="confirmNewPasswordToggle"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="password-requirements">
+                    <small class="password-help">
+                      Parol ən azı 6 simvoldan ibarət olmalıdır
+                    </small>
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="changePasswordBtn"
+                  >
+                    <span class="btn-text">Parolu dəyişdir</span>
+                    <div class="btn-loader" style="display: none">
+                      <div class="spinner"></div>
+                    </div>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Promotions Tab -->
+            <div class="tab-content" id="promotions">
+              <div class="profile-card">
+                <h2 class="card-title">Tələbə Promosyonu</h2>
+
+                <div class="promotion-section">
+                  <div class="promotion-upload">
+                    <div class="upload-area">
+                      <div class="upload-content">
+                        <p class="upload-title">Tələbə sənədini əlavə edin</p>
+                        <input
+                          type="file"
+                          id="studentDocument"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          style="display: none"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-secondary upload-btn"
+                          id="uploadBtn"
+                        >
+                          <i class="fas fa-upload"></i>
+                          Sənəd seçin
+                        </button>
+                        <small class="upload-help"
+                          >Maksimum 10 MB (PDF, JPG, PNG)</small
+                        >
+                      </div>
+                    </div>
+
+                    <div class="document-status">
+                      <div class="status-card" id="statusCard">
+                        <div class="no-document" id="noDocument">
+                          <i class="fas fa-file-upload"></i>
+                          <p>No data</p>
+                        </div>
+
+                        <div
+                          class="document-pending"
+                          id="documentPending"
+                          style="display: none"
+                        >
+                          <i class="fas fa-clock"></i>
+                          <p>Sənədiniz yoxlanılır...</p>
+                        </div>
+
+                        <div
+                          class="document-approved"
+                          id="documentApproved"
+                          style="display: none"
+                        >
+                          <div class="qr-code">
+                            <i class="fas fa-qrcode"></i>
+                          </div>
+                          <p>Tələbə promosyonu aktiv</p>
+                        </div>
+
+                        <div
+                          class="document-rejected"
+                          id="documentRejected"
+                          style="display: none"
+                        >
+                          <i class="fas fa-times-circle"></i>
+                          <p>Sizin sənədiniz uyğun deyil</p>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-secondary retry-btn"
+                            id="retryBtn"
+                          >
+                            Yenidən yükləyin
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <div class="footer-logo">
+              <img
+                src="image/logo.png"
+                alt="Depod Logo"
+                class="footer-logo-icon"
+              />
+              <span class="footer-logo-text" translate="no">DEPOD</span>
+            </div>
+            <p class="footer-description">
+              Keyfiyyətli texnologiya məhsulları ilə həyatınızı asanlaşdırın.
+            </p>
+          </div>
+
+          <div class="footer-section">
+            <h3 class="footer-section-title">Sürətli Linklər</h3>
+            <ul class="footer-links">
+              <li><a href="index.html">Ana Səhifə</a></li>
+              <li><a href="products.html">Məhsullar</a></li>
+              <li><a href="about.html">Haqqımızda</a></li>
+              <li><a href="contact.html">Əlaqə</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-section">
+            <h3 class="footer-section-title">Məhsullar</h3>
+            <ul class="footer-links">
+              <li><a href="products.html?category=powerbank">Powerbank</a></li>
+              <li><a href="products.html?category=earphone">Qulaqlıqlar</a></li>
+              <li>
+                <a href="products.html?category=charger">Şarj Cihazları</a>
+              </li>
+              <li>
+                <a href="products.html?category=car-charger">Avtomobil Şarj</a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="footer-section">
+            <h3 class="footer-section-title">Əlaqə</h3>
+            <ul class="footer-contact">
+              <li><i class="fas fa-phone"></i> +994 50 123 45 67</li>
+              <li><i class="fas fa-envelope"></i> info@depod.az</li>
+              <li><i class="fas fa-map-marker-alt"></i> Bakı, Azərbaycan</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; 2024 Depod. Bütün hüquqlar qorunur.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/profile.js"></script>
+  </body>
+</html>
