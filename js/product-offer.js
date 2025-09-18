@@ -82,27 +82,6 @@ class ProductOfferModal {
         this.formatPhoneNumber(e);
       });
     }
-
-    // Quantity counter functionality
-    const quantityInput = document.getElementById("quantity");
-    const quantityMinus = document.querySelector(".quantity-minus");
-    const quantityPlus = document.querySelector(".quantity-plus");
-
-    if (quantityInput && quantityMinus && quantityPlus) {
-      quantityMinus.addEventListener("click", () => {
-        const currentValue = parseInt(quantityInput.value) || 1;
-        if (currentValue > 1) {
-          quantityInput.value = currentValue - 1;
-        }
-      });
-
-      quantityPlus.addEventListener("click", () => {
-        const currentValue = parseInt(quantityInput.value) || 1;
-        if (currentValue < 1000) {
-          quantityInput.value = currentValue + 1;
-        }
-      });
-    }
   }
 
   getCurrentProductId() {
@@ -124,7 +103,7 @@ class ProductOfferModal {
     this.modal.classList.add("show");
     document.body.style.overflow = "hidden";
 
-    // Focus on first input
+    // Focus on first input after modal is shown
     setTimeout(() => {
       const firstInput = this.form.querySelector('input[type="text"]');
       if (firstInput) firstInput.focus();
@@ -228,20 +207,6 @@ class ProductOfferModal {
       errors.push({ field: "city", message: "Şəhər seçmək məcburidir" });
     }
 
-    // Quantity validation
-    const quantity = parseInt(formData.get("quantity"));
-    if (!quantity || quantity < 1) {
-      errors.push({
-        field: "quantity",
-        message: "Miqdar ən azı 1 olmalıdır",
-      });
-    } else if (quantity > 1000) {
-      errors.push({
-        field: "quantity",
-        message: "Miqdar 1000-dən çox ola bilməz",
-      });
-    }
-
     // Email validation (if provided)
     const email = formData.get("email")?.trim();
     if (email) {
@@ -309,7 +274,6 @@ class ProductOfferModal {
         phone_number: formData.get("phone_number").trim(),
         email: formData.get("email")?.trim() || "",
         city: formData.get("city"),
-        quantity: parseInt(formData.get("quantity")),
         product: this.currentProductId,
         offer_text: formData.get("offer_text")?.trim() || "",
       };

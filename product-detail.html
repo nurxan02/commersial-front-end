@@ -115,6 +115,56 @@
                 <h1 id="productName" class="product-title-large"></h1>
               </div>
 
+              <!-- Product Pricing -->
+              <div class="product-pricing-section" id="productPricing">
+                <!-- Pricing will be populated dynamically -->
+              </div>
+
+              <!-- Product Stock -->
+              <div class="product-stock-section" id="productStock">
+                <!-- Stock status will be populated dynamically -->
+              </div>
+
+              <!-- Quantity Selector -->
+              <div class="quantity-selector">
+                <label for="quantity">Miqdar:</label>
+                <div class="quantity-controls">
+                  <button
+                    type="button"
+                    class="quantity-btn"
+                    id="decreaseQty"
+                    onclick="changeQuantity(-1)"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    id="quantity"
+                    class="quantity-input"
+                    value="1"
+                    min="1"
+                    max="10"
+                    readonly
+                  />
+                  <button
+                    type="button"
+                    class="quantity-btn"
+                    id="increaseQty"
+                    onclick="changeQuantity(1)"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <!-- Product Actions -->
+              <div class="product-actions">
+                <button class="buy-now-btn" id="buyNowBtn" onclick="buyNow()">
+                  <i class="fas fa-shopping-cart"></i>
+                  İndi Satın Al
+                </button>
+              </div>
+
               <div class="product-highlights-container" id="productHighlights">
                 <!-- Highlights will be populated dynamically -->
               </div>
@@ -137,7 +187,7 @@
                 </button>
                 <button
                   class="btn-buy-now"
-                  onclick="window.location.href='https://www.example.com'"
+                  onclick="window.location.href='https://www.google.com/maps/search/armoodstore/@40.3793387,49.8453584,11z?entry=s&sa=X&ved=1t%3A199789'"
                 >
                   Mağazanı Tap
                 </button>
@@ -388,27 +438,6 @@
                   <option value="zangilan">Zəngilan</option>
                   <option value="zardab">Zərdab</option>
                 </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="quantity">Miqdar (ədəd) *</label>
-              <div class="quantity-counter">
-                <button type="button" class="quantity-btn quantity-minus">
-                  <i class="fas fa-minus"></i>
-                </button>
-                <input
-                  type="number"
-                  id="quantity"
-                  name="quantity"
-                  min="1"
-                  max="1000"
-                  value="1"
-                  required
-                />
-                <button type="button" class="quantity-btn quantity-plus">
-                  <i class="fas fa-plus"></i>
-                </button>
               </div>
             </div>
 

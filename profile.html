@@ -117,6 +117,10 @@
               <i class="fas fa-user"></i>
               <span>Profil Bilgiləri</span>
             </button>
+            <button class="tab-btn" data-tab="orders">
+              <i class="fas fa-shopping-bag"></i>
+              <span>Sifarişlər</span>
+            </button>
             <button class="tab-btn" data-tab="password-reset">
               <i class="fas fa-lock"></i>
               <span>Parol Dəyişdirmə</span>
@@ -176,6 +180,7 @@
                         type="tel"
                         id="editPhone"
                         name="phone"
+                        readonly
                         placeholder="Loading..."
                       />
                       <button type="button" class="edit-btn" id="editPhoneBtn">
@@ -207,6 +212,44 @@
                     </div>
                   </button>
                 </form>
+              </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div class="tab-content" id="orders">
+              <div class="orders-section">
+                <div class="orders-header">
+                  <h2 class="orders-title">Sifarişlərim</h2>
+                  <div class="order-filters">
+                    <button class="filter-chip active" data-status="all">
+                      Hamısı
+                    </button>
+                    <button class="filter-chip" data-status="pending">
+                      Gözləyən
+                    </button>
+                    <button class="filter-chip" data-status="processing">
+                      İşlənən
+                    </button>
+                    <button class="filter-chip" data-status="shipped">
+                      Göndərilən
+                    </button>
+                    <button class="filter-chip" data-status="delivered">
+                      Çatdırılan
+                    </button>
+                  </div>
+                </div>
+
+                <div class="orders-list" id="ordersList">
+                  <!-- Orders will be loaded dynamically -->
+                  <div class="no-orders" style="display: none">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h3>Hələ sifarişiniz yoxdur</h3>
+                    <p>İlk sifarişinizi vermək üçün məhsullarımıza baxın</p>
+                    <a href="products.html" class="btn btn-primary"
+                      >Məhsullara Bax</a
+                    >
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -395,46 +438,67 @@
               <span class="footer-logo-text" translate="no">DEPOD</span>
             </div>
             <p class="footer-description">
-              Keyfiyyətli texnologiya məhsulları ilə həyatınızı asanlaşdırın.
+              Keyfiyyətli texnoloji məhsullar istehsalçısı. Yenilikçi həllər və
+              etibarlı məhsullarla sizin xidmətinizdəyik.
             </p>
+            <div class="social-icons">
+              <a
+                href="https://instagram.com/depod"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a
+                href="https://www.tiktok.com/@depod"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="fab fa-tiktok"></i>
+              </a>
+              <a
+                href="https://facebook.com/depod"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="fab fa-facebook-f"></i>
+              </a>
+            </div>
           </div>
 
           <div class="footer-section">
-            <h3 class="footer-section-title">Sürətli Linklər</h3>
+            <h4 class="footer-title">Məhsullar</h4>
             <ul class="footer-links">
-              <li><a href="index.html">Ana Səhifə</a></li>
-              <li><a href="products.html">Məhsullar</a></li>
+              <li><a href="products.html?category=powerbank">Powerbank</a></li>
+              <li><a href="products.html?category=earphone">Qulaqlıqlar</a></li>
+              <li>
+                <a href="products.html?category=car-charger">Avtomobil Şarjı</a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="footer-section">
+            <h4 class="footer-title">Şirkət</h4>
+            <ul class="footer-links">
               <li><a href="about.html">Haqqımızda</a></li>
               <li><a href="contact.html">Əlaqə</a></li>
             </ul>
           </div>
 
           <div class="footer-section">
-            <h3 class="footer-section-title">Məhsullar</h3>
-            <ul class="footer-links">
-              <li><a href="products.html?category=powerbank">Powerbank</a></li>
-              <li><a href="products.html?category=earphone">Qulaqlıqlar</a></li>
-              <li>
-                <a href="products.html?category=charger">Şarj Cihazları</a>
-              </li>
-              <li>
-                <a href="products.html?category=car-charger">Avtomobil Şarj</a>
-              </li>
-            </ul>
-          </div>
-
-          <div class="footer-section">
-            <h3 class="footer-section-title">Əlaqə</h3>
-            <ul class="footer-contact">
-              <li><i class="fas fa-phone"></i> +994 50 123 45 67</li>
-              <li><i class="fas fa-envelope"></i> info@depod.az</li>
-              <li><i class="fas fa-map-marker-alt"></i> Bakı, Azərbaycan</li>
-            </ul>
+            <h4 class="footer-title">Əlaqə</h4>
+            <div class="footer-contact">
+              <p>info@depod.az</p>
+              <p>+994 77 333 41 42</p>
+            </div>
           </div>
         </div>
 
         <div class="footer-bottom">
-          <p>&copy; 2024 Depod. Bütün hüquqlar qorunur.</p>
+          <p>
+            &copy; 2025 Depod. Bütün hüquqlar qorunur.
+            <a href="https://nurkhanmasimzada.site">Developed by Masimzada</a>
+          </p>
         </div>
       </div>
     </footer>
@@ -442,6 +506,7 @@
     <!-- Scripts -->
     <script src="js/api.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/footer.js"></script>
     <script src="js/profile.js"></script>
   </body>
 </html>

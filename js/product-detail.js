@@ -7,6 +7,105 @@
 
 // Product Detail Page JavaScript
 
+// Global variable to store current product
+let currentProduct = null;
+
+// Import helper functions from products.js
+function getUserStudentStatus() {
+  const userData = localStorage.getItem("depod_user");
+  if (!userData) return null;
+
+  try {
+    const user = JSON.parse(userData);
+    return user.student_status;
+  } catch (e) {
+    return null;
+  }
+}
+
+function calculateStudentPrice(originalPrice, studentDiscount) {
+  return originalPrice * (1 - studentDiscount / 100);
+}
+
+function createPriceHTML(product) {
+  const isStudent = getUserStudentStatus() === "approved";
+  let priceHTML = "";
+
+  if (product.discountedPrice && product.discountedPrice < product.price) {
+    const currentPrice = isStudent
+      ? calculateStudentPrice(
+          product.discountedPrice,
+          product.studentDiscount || 0
+        )
+      : product.discountedPrice;
+
+    priceHTML = `
+      <div class="product-price-detail">
+        <div class="price-row">
+          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
+          <span class="price-original">${product.price.toFixed(2)} ₼</span>
+        </div>
+        <div class="discount-badges">
+          <span class="price-discount">-${product.discount}%</span>
+          ${
+            isStudent
+              ? `<span class="student-discount-badge">+${
+                  product.studentDiscount || 0
+                }% Tələbə</span>`
+              : ""
+          }
+        </div>
+      </div>
+      <div class="stock-info-separate">
+        <span class="stock-status ${
+          product.inStock ? "in-stock" : "out-of-stock"
+        }">
+          <span class="stock-indicator"></span>
+          ${product.inStock ? "Stokda var" : "Stokda yoxdur"}
+        </span>
+      </div>
+    `;
+  } else {
+    const currentPrice = isStudent
+      ? calculateStudentPrice(product.price, product.studentDiscount || 0)
+      : product.price;
+
+    priceHTML = `
+      <div class="product-price-detail">
+        <div class="price-row">
+          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
+          ${
+            isStudent && product.studentDiscount
+              ? `<span class="price-original">${product.price.toFixed(
+                  2
+                )} ₼</span>`
+              : ""
+          }
+        </div>
+        ${
+          isStudent && product.studentDiscount
+            ? `
+          <div class="discount-badges">
+            <span class="student-discount-badge">-${product.studentDiscount}% Tələbə</span>
+          </div>
+        `
+            : ""
+        }
+      </div>
+      <div class="stock-info-separate">
+        <span class="stock-status ${
+          product.inStock ? "in-stock" : "out-of-stock"
+        }">
+          <span class="stock-indicator"></span>
+          ${product.inStock ? "Stokda var" : "Stokda yoxdur"}
+        </span>
+      </div>
+    `;
+  }
+
+  return priceHTML;
+}
+
 // Import products data from products.js
 async function getProductById(productId) {
   if (typeof PRODUCTS === "undefined") {
@@ -130,6 +229,9 @@ async function initProductDetailPage() {
 }
 
 function populateProductData(product) {
+  // Store current product globally
+  currentProduct = product;
+
   // Update page title
   document.title = `${product.name} - Depod`;
   document.getElementById("pageTitle").textContent = `${product.name} - Depod`;
@@ -174,7 +276,20 @@ function populateProductData(product) {
   // Populate product name
   document.getElementById("productName").textContent = product.name;
 
-  // ...existing code...
+  // Populate pricing
+  const productPricing = document.getElementById("productPricing");
+  if (productPricing) {
+    productPricing.innerHTML = createPriceHTML(product);
+  }
+
+  // Update Buy Now button based on stock
+  const buyNowBtn = document.getElementById("buyNowBtn");
+  if (buyNowBtn) {
+    buyNowBtn.disabled = !product.inStock;
+    if (!product.inStock) {
+      buyNowBtn.innerHTML = '<i class="fas fa-ban"></i> Stokda Yoxdur';
+    }
+  }
 
   // Populate main image
   const mainImage = document.getElementById("mainProductImage");
@@ -420,6 +535,186 @@ function addToCart() {
   // 1. Add to localStorage cart
   // 2. Update cart UI
   // 3. Send to backend if available
+}
+
+// Quantity control functions
+function changeQuantity(delta) {
+  const quantityInput = document.getElementById("quantity");
+  const currentValue = parseInt(quantityInput.value);
+  const newValue = currentValue + delta;
+
+  // Validate bounds
+  const min = parseInt(quantityInput.min) || 1;
+  const max = parseInt(quantityInput.max) || 10;
+
+  if (newValue >= min && newValue <= max) {
+    quantityInput.value = newValue;
+
+    // Update button states
+    document.getElementById("decreaseQty").disabled = newValue <= min;
+    document.getElementById("increaseQty").disabled = newValue >= max;
+  }
+}
+
+// Product action functions
+function buyNow() {
+  const quantity = parseInt(document.getElementById("quantity").value);
+  const productId = new URLSearchParams(window.location.search).get("id");
+
+  // Check if user is logged in
+  const userData = localStorage.getItem("depod_user");
+  if (!userData) {
+    showNotification("Satın almaq üçün hesabınıza daxil olun!", "error");
+    setTimeout(() => {
+      window.location.href =
+        "login.html?redirect=" + encodeURIComponent(window.location.href);
+    }, 2000);
+    return;
+  }
+
+  // Create order
+  createOrder(productId, quantity);
+}
+
+function sendOffer() {
+  // Redirect to contact page with product info
+  const productId = new URLSearchParams(window.location.search).get("id");
+  window.location.href = `contact.html?product=${productId}&type=offer`;
+}
+
+function findStore() {
+  // Scroll to map or redirect to store finder
+  window.location.href = "contact.html#map";
+}
+
+// Order creation system
+function createOrder(productId, quantity) {
+  try {
+    const userData = JSON.parse(localStorage.getItem("depod_user"));
+    const product = currentProduct; // From global scope
+
+    if (!product) {
+      showNotification("Məhsul məlumatı tapılmadı!", "error");
+      return;
+    }
+
+    // Calculate total price
+    const isStudent = getUserStudentStatus() === "approved";
+    let unitPrice = product.discountedPrice || product.price;
+
+    if (isStudent && product.studentDiscount) {
+      unitPrice = calculateStudentPrice(unitPrice, product.studentDiscount);
+    }
+
+    const totalPrice = unitPrice * quantity;
+
+    // Create order object
+    const order = {
+      id: generateOrderId(),
+      userId: userData.id,
+      productId: productId,
+      productName: product.name,
+      productImage: product.images.main,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      estimatedDelivery: getEstimatedDelivery(),
+    };
+
+    // Save order to localStorage
+    const existingOrders = JSON.parse(
+      localStorage.getItem("depod_orders") || "[]"
+    );
+    existingOrders.push(order);
+    localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
+
+    // Initiate payment process
+    initiatePayment(order);
+  } catch (error) {
+    console.error("Order creation failed:", error);
+    showNotification("Sifarişin yaradılmasında xəta baş verdi!", "error");
+  }
+}
+
+// Payment integration
+function initiatePayment(order) {
+  // Show loading state
+  showNotification("Ödəniş sisteminə yönləndirilirsiz...", "info");
+
+  // Simulate payment process (replace with actual odero.az integration)
+  // In real implementation, this would redirect to payment gateway
+
+  // For demo purposes, simulate payment result after 2 seconds
+  setTimeout(() => {
+    // Simulate payment success/failure (you can change this for testing)
+    const paymentSuccess = Math.random() > 0.1; // 90% success rate for demo
+
+    if (paymentSuccess) {
+      // Payment successful - redirect to success page
+      window.location.href = `order-success.html?orderId=${order.id}&status=success`;
+    } else {
+      // Payment failed - redirect to failure page
+      window.location.href = `order-failure.html?orderId=${
+        order.id
+      }&error=PAYMENT_DECLINED&message=${encodeURIComponent(
+        "Ödəniş rədd edildi"
+      )}&productId=${order.productId}&quantity=${order.quantity}`;
+    }
+  }, 2000);
+
+  // In real implementation, you would do something like:
+  /*
+  const paymentUrl = buildOderoPaymentUrl(order);
+  window.location.href = paymentUrl;
+  */
+}
+
+// Build payment URL for odero.az (example implementation)
+function buildOderoPaymentUrl(order) {
+  const baseUrl = "https://payment.odero.az"; // Replace with actual URL
+  const params = new URLSearchParams({
+    merchant_id: "YOUR_MERCHANT_ID",
+    amount: order.totalPrice.toFixed(2),
+    currency: "AZN",
+    order_id: order.id,
+    description: `${order.productName} - ${order.quantity} ədəd`,
+    success_url: `${window.location.origin}/order-success.html?orderId=${order.id}`,
+    cancel_url: `${window.location.origin}/order-failure.html?orderId=${order.id}`,
+    fail_url: `${window.location.origin}/order-failure.html?orderId=${order.id}`,
+  });
+
+  return `${baseUrl}?${params.toString()}`;
+}
+
+// Helper functions
+function generateOrderId() {
+  return (
+    "ORD" +
+    Date.now().toString().slice(-6) +
+    Math.random().toString(36).substr(2, 3).toUpperCase()
+  );
+}
+
+function getEstimatedDelivery() {
+  const deliveryDate = new Date();
+  deliveryDate.setDate(deliveryDate.getDate() + 3); // 3 days from now
+  return deliveryDate.toISOString();
+}
+
+function updateOrderNotifications() {
+  const orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+  const pendingOrders = orders.filter(
+    (order) => order.status === "pending" || order.status === "processing"
+  ).length;
+
+  // Update badge in navbar if exists
+  const notificationBadge = document.querySelector(".notification-badge");
+  if (notificationBadge && pendingOrders > 0) {
+    notificationBadge.textContent = pendingOrders;
+    notificationBadge.style.display = "flex";
+  }
 }
 
 function buyNow() {

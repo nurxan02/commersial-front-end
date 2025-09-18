@@ -30,9 +30,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   } catch (e) {}
 
+  setupMobileNavigation();
+});
+
+function setupMobileNavigation() {
   const navToggle = document.getElementById("nav-toggle");
   const navMenu = document.getElementById("nav-menu");
-  const navLinks = document.querySelectorAll(".nav-link");
 
   // Toggle mobile menu
   if (navToggle) {
@@ -42,13 +45,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Close mobile menu when clicking on a link
-  navLinks.forEach((link) => {
-    link.addEventListener("click", function () {
-      navMenu.classList.remove("active");
-      navToggle.classList.remove("active");
-    });
-  });
+  // Setup nav links click handlers
+  setupNavLinksClickHandlers();
 
   // Close mobile menu when clicking outside
   document.addEventListener("click", function (e) {
@@ -57,7 +55,32 @@ document.addEventListener("DOMContentLoaded", function () {
       navToggle.classList.remove("active");
     }
   });
-});
+}
+
+function setupNavLinksClickHandlers() {
+  const navLinks = document.querySelectorAll(".nav-link");
+
+  // Close mobile menu when clicking on a link (except profile toggle)
+  navLinks.forEach((link) => {
+    // Remove existing listeners to prevent duplicates
+    link.removeEventListener("click", handleNavLinkClick);
+    link.addEventListener("click", handleNavLinkClick);
+  });
+}
+
+function handleNavLinkClick(e) {
+  // Don't close menu if it's a profile toggle
+  if (this.classList.contains("profile-toggle")) {
+    return;
+  }
+
+  const navMenu = document.getElementById("nav-menu");
+  const navToggle = document.getElementById("nav-toggle");
+
+  // Close mobile menu for all other links (including dropdown items)
+  navMenu.classList.remove("active");
+  navToggle.classList.remove("active");
+}
 
 // Navbar scroll effect
 window.addEventListener("scroll", function () {
@@ -336,10 +359,15 @@ function updateNavbarForLoggedInUser(userName) {
       <a href="#" class="nav-link profile-toggle" id="profileToggle">
         <span class="user-name">${userName}</span>
         <i class="fas fa-chevron-down"></i>
+        <div class="notification-badge" id="orderNotificationBadge" style="display: none;">0</div>
       </a>
       <div class="profile-dropdown-menu" id="profileDropdown">
         <a href="profile.html" class="dropdown-item">
           <i class="fas fa-user"></i> Profil
+        </a>
+        <a href="profile.html?tab=orders" class="dropdown-item">
+          <i class="fas fa-shopping-bag"></i> Sifarişlər
+          <span class="order-count" id="orderCount"></span>
         </a>
         <a href="#" class="dropdown-item" id="navLogoutBtn">
           <i class="fas fa-sign-out-alt"></i> Çıxış
@@ -351,12 +379,21 @@ function updateNavbarForLoggedInUser(userName) {
 
     // Add dropdown functionality
     setupProfileDropdown();
+
+    // Re-setup navigation handlers to include the new profile dropdown
+    setupNavLinksClickHandlers();
+
+    // Update order notifications
+    updateOrderNotifications();
   } else {
     // Update existing dropdown with new name
     const userNameElement = profileDropdown.querySelector(".user-name");
     if (userNameElement) {
       userNameElement.textContent = userName;
     }
+
+    // Update order notifications
+    updateOrderNotifications();
   }
 }
 
@@ -400,16 +437,51 @@ function setupProfileDropdown() {
   if (profileToggle && profileDropdown) {
     profileToggle.addEventListener("click", function (e) {
       e.preventDefault();
+      e.stopPropagation();
       profileDropdown.classList.toggle("active");
     });
 
-    // Close dropdown when clicking outside
-    document.addEventListener("click", function (e) {
-      if (
-        !profileToggle.contains(e.target) &&
-        !profileDropdown.contains(e.target)
-      ) {
+    // Add click handlers to dropdown items to close mobile menu
+    const dropdownItems = profileDropdown.querySelectorAll(".dropdown-item");
+    dropdownItems.forEach((item) => {
+      item.addEventListener("click", function (e) {
+        // Close mobile menu when dropdown item is clicked
+        const navMenu = document.getElementById("nav-menu");
+        const navToggle = document.getElementById("nav-toggle");
+
+        if (window.innerWidth <= 768) {
+          navMenu.classList.remove("active");
+          navToggle.classList.remove("active");
+        }
+
+        // Close dropdown
         profileDropdown.classList.remove("active");
+      });
+    });
+
+    // Close dropdown when clicking outside (but not on mobile menu toggle)
+    document.addEventListener("click", function (e) {
+      const navToggle = document.getElementById("nav-toggle");
+      const navMenu = document.getElementById("nav-menu");
+
+      // Don't close if clicking on nav toggle or if mobile menu is not active
+      if (navToggle && navToggle.contains(e.target)) {
+        return;
+      }
+
+      // On mobile, only close dropdown if clicking outside the nav menu
+      if (window.innerWidth <= 768) {
+        if (!navMenu.contains(e.target)) {
+          profileDropdown.classList.remove("active");
+        }
+      } else {
+        // Desktop behavior
+        if (
+          !profileToggle.contains(e.target) &&
+          !profileDropdown.contains(e.target)
+        ) {
+          profileDropdown.classList.remove("active");
+        }
       }
     });
   }
@@ -436,4 +508,52 @@ window.addEventListener("storage", function (e) {
   if (e.key === "depod_user" || e.key === "depod_access_token") {
     updateNavbarAuth();
   }
+
+  // Also listen for order changes
+  if (e.key === "depod_orders") {
+    updateOrderNotifications();
+  }
 });
+
+// Order notification system
+function updateOrderNotifications() {
+  try {
+    const orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+    const pendingOrders = orders.filter(
+      (order) =>
+        order.status === "pending" ||
+        order.status === "processing" ||
+        order.status === "shipped"
+    ).length;
+
+    // Update notification badge
+    const badge = document.getElementById("orderNotificationBadge");
+    const orderCount = document.getElementById("orderCount");
+
+    if (badge) {
+      if (pendingOrders > 0) {
+        badge.textContent = pendingOrders;
+        badge.style.display = "flex";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+
+    if (orderCount) {
+      if (pendingOrders > 0) {
+        orderCount.textContent = `(${pendingOrders})`;
+        orderCount.style.display = "inline";
+      } else {
+        orderCount.style.display = "none";
+      }
+    }
+  } catch (error) {
+    console.error("Error updating order notifications:", error);
+  }
+}
+
+// Update notifications periodically
+setInterval(updateOrderNotifications, 30000); // Every 30 seconds
+
+// Global function to refresh order notifications (called from other scripts)
+window.refreshOrderNotifications = updateOrderNotifications;

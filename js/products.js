@@ -27,9 +27,11 @@ const PRODUCTS = {
     id: "peak-black",
     name: "Peak Black",
     category: "earphone",
-    // price: 89.99,
-    // originalPrice: 119.99,
-    // discount: 25,
+    price: 119.99,
+    discountedPrice: 89.99,
+    discount: 25,
+    studentDiscount: 10,
+    inStock: true,
     images: {
       main: "image/material/earphone/png/peak-black.png",
       gallery: [
@@ -67,9 +69,11 @@ const PRODUCTS = {
     id: "peak-beige",
     name: "Peak Beige",
     category: "earphone",
-    // price: 94.99,
-    // originalPrice: 129.99,
-    // discount: 27,
+    price: 129.99,
+    discountedPrice: 94.99,
+    discount: 27,
+    studentDiscount: 15,
+    inStock: true,
     images: {
       main: "image/material/earphone/png/peak-beige.png",
       gallery: [
@@ -107,9 +111,11 @@ const PRODUCTS = {
     id: "tws-001-white",
     name: "TWS-001 White",
     category: "earphone",
-    // price: 69.99,
-    // originalPrice: 89.99,
-    // discount: 22,
+    price: 89.99,
+    discountedPrice: 69.99,
+    discount: 22,
+    studentDiscount: 12,
+    inStock: true,
     images: {
       main: "image/material/earphone/TWS-001-white.jpg",
       gallery: [
@@ -147,9 +153,11 @@ const PRODUCTS = {
     id: "powerpack-15w",
     name: "PowerPack 15W",
     category: "powerbank",
-    // price: 49.99,
-    // originalPrice: 69.99,
-    // discount: 29,
+    price: 69.99,
+    discountedPrice: 49.99,
+    discount: 29,
+    studentDiscount: 20,
+    inStock: true,
     images: {
       main: "image/material/earphone/powerpack-15w-white-perspective.jpg",
       gallery: [
@@ -186,9 +194,11 @@ const PRODUCTS = {
     id: "charger-20w",
     name: "Charger 20W",
     category: "charger",
-    // price: 24.99,
-    // originalPrice: 34.99,
-    // discount: 29,
+    price: 34.99,
+    discountedPrice: 24.99,
+    discount: 29,
+    studentDiscount: 15,
+    inStock: true,
     images: {
       main: "image/material/earphone/charger-20w.jpg",
       gallery: [
@@ -225,9 +235,11 @@ const PRODUCTS = {
     id: "car-charger-15w",
     name: "Car Charger 15W",
     category: "car-charger",
-    // price: 24.99,
-    // originalPrice: 34.99,
-    // discount: 29,
+    price: 34.99,
+    discountedPrice: 24.99,
+    discount: 29,
+    studentDiscount: 18,
+    inStock: true,
     images: {
       main: "image/material/earphone/car-15w.jpg",
       gallery: [
@@ -286,6 +298,106 @@ function mapApiProduct(p) {
       ? p.highlights.map((h) => ({ number: h.number, text: h.text }))
       : [],
   };
+}
+
+// Get user's student status
+function getUserStudentStatus() {
+  const userData = localStorage.getItem("depod_user");
+  if (!userData) return null;
+
+  try {
+    const user = JSON.parse(userData);
+    return user.student_status;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Calculate price with student discount
+function calculateStudentPrice(originalPrice, studentDiscount) {
+  return originalPrice * (1 - studentDiscount / 100);
+}
+
+// Create price HTML
+function createPriceHTML(product) {
+  const isStudent = getUserStudentStatus() === "approved";
+  let priceHTML = "";
+
+  if (product.discountedPrice && product.discountedPrice < product.price) {
+    // There's a general discount
+    const currentPrice = isStudent
+      ? calculateStudentPrice(
+          product.discountedPrice,
+          product.studentDiscount || 0
+        )
+      : product.discountedPrice;
+
+    priceHTML = `
+      <div class="product-price">
+        <div class="price-row">
+          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
+          <span class="price-original">${product.price.toFixed(2)} ₼</span>
+        </div>
+        <div class="discount-badges">
+          <span class="price-discount">-${product.discount}%</span>
+          ${
+            isStudent
+              ? `<span class="student-discount-badge">+${
+                  product.studentDiscount || 0
+                }% Tələbə</span>`
+              : ""
+          }
+        </div>
+      </div>
+      <div class="stock-info-separate">
+        <span class="stock-status ${
+          product.inStock ? "in-stock" : "out-of-stock"
+        }">
+          <span class="stock-indicator"></span>
+          ${product.inStock ? "Stokda var" : "Stokda yoxdur"}
+        </span>
+      </div>
+    `;
+  } else {
+    // No general discount, but maybe student discount
+    const currentPrice = isStudent
+      ? calculateStudentPrice(product.price, product.studentDiscount || 0)
+      : product.price;
+
+    priceHTML = `
+      <div class="product-price">
+        <div class="price-row">
+          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
+          ${
+            isStudent && product.studentDiscount
+              ? `<span class="price-original">${product.price.toFixed(
+                  2
+                )} ₼</span>`
+              : ""
+          }
+        </div>
+        ${
+          isStudent && product.studentDiscount
+            ? `
+          <div class="discount-badges">
+            <span class="student-discount-badge">-${product.studentDiscount}% Tələbə</span>
+          </div>
+        `
+            : ""
+        }
+      </div>
+      <div class="stock-info-separate">
+        <span class="stock-status ${
+          product.inStock ? "in-stock" : "out-of-stock"
+        }">
+          <span class="stock-indicator"></span>
+          ${product.inStock ? "Stokda var" : "Stokda yoxdur"}
+        </span>
+      </div>
+    `;
+  }
+
+  return priceHTML;
 }
 
 // Get all products (prefers API)
@@ -351,7 +463,7 @@ function renderProducts(products) {
                  }</h3>
                 <p class="product-description-short">${product.description}</p>
                 <div class="product-price-container">
-
+                    ${createPriceHTML(product)}
                 </div>
                 <a href="product-detail.html?id=${
                   product.id

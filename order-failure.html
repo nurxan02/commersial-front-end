@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="az">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ödəniş Uğursuz - Depod</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Ödəniş uğursuz oldu" />
+    <meta name="keywords" content="depod sifariş, uğursuz ödəniş" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="96x96"
+      href="favicon/favicon-96x96.png"
+    />
+    <link rel="apple-touch-icon" href="favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="favicon/site.webmanifest" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <nav class="navbar">
+          <div class="nav-brand">
+            <a href="index.html" class="brand-logo">
+              <img src="image/logo.png" alt="Depod Logo" class="logo-img" />
+              <span class="brand-text">DEPOD</span>
+            </a>
+          </div>
+
+          <div class="nav-links" id="navLinks">
+            <a href="index.html" class="nav-link">Ana Səhifə</a>
+            <a href="products.html" class="nav-link">Məhsullar</a>
+            <a href="about.html" class="nav-link">Haqqımızda</a>
+            <a href="contact.html" class="nav-link">Əlaqə</a>
+            <div class="nav-dropdown">
+              <span class="nav-link dropdown-trigger" id="demoDropdown">
+                Demo
+                <i class="fas fa-chevron-down dropdown-icon"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="nav-actions">
+            <div class="user-menu" id="userMenuContainer">
+              <!-- User menu will be populated dynamically -->
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="container">
+        <div class="order-completion-container">
+          <div class="order-failure-card">
+            <div class="failure-icon">
+              <i class="fas fa-times-circle"></i>
+            </div>
+            <h1 class="failure-title">Ödəniş Uğursuz Oldu</h1>
+            <p class="failure-message">
+              Təəssüf ki, ödənişiniz tamamlanmadı. Zəhmət olmasa yenidən cəhd
+              edin.
+            </p>
+
+            <div class="error-details" id="errorDetails">
+              <!-- Error details will be populated dynamically -->
+            </div>
+
+            <div class="failure-actions">
+              <div class="action-buttons">
+                <button class="btn btn-primary" id="retryPaymentBtn">
+                  <i class="fas fa-redo"></i>
+                  Yenidən Cəhd Et
+                </button>
+                <a href="products.html" class="btn btn-outline">
+                  <i class="fas fa-shopping-bag"></i>
+                  Məhsullara Qayıt
+                </a>
+                <a href="contact.html" class="btn btn-outline">
+                  <i class="fas fa-headset"></i>
+                  Dəstək Xidməti
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" id="footer">
+      <!-- Footer will be populated dynamically -->
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+    <script src="js/footer.js"></script>
+    <script src="js/order-failure.js"></script>
+  </body>
+</html>

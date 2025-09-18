@@ -7,7 +7,6 @@
     const el = document.querySelector('meta[name="depod-api-base"]');
     return el && el.content ? el.content.trim() : "";
   }
-  
 
   function isLocalhostHost(h) {
     return h === "localhost" || h === "127.0.0.1";
@@ -108,11 +107,101 @@
     setBase("http://127.0.0.1:8000");
   }
 
+  // E-commerce API functions
+  async function createOrder(orderData) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(apiUrl("/api/orders/"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      credentials: "include",
+      body: JSON.stringify(orderData),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+    return resp.json();
+  }
+
+  async function getOrders() {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(apiUrl("/api/orders/"), {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      credentials: "include",
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+    return resp.json();
+  }
+
+  async function updateOrderStatus(orderId, status) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(apiUrl(`/api/orders/${orderId}/`), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      credentials: "include",
+      body: JSON.stringify({ status }),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+    return resp.json();
+  }
+
+  async function getProductPricing(productId) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(apiUrl(`/api/products/${productId}/pricing/`), {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      credentials: "include",
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+    return resp.json();
+  }
+
+  async function getStudentDiscount() {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(apiUrl("/api/student-discount/"), {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      credentials: "include",
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+    return resp.json();
+  }
+
   window.API = {
     setBase,
     listProducts,
     getProduct,
     listCategories,
+    createOrder,
+    getOrders,
+    updateOrderStatus,
+    getProductPricing,
+    getStudentDiscount,
     _url: apiUrl,
   };
 })();

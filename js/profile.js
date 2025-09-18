@@ -65,6 +65,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // Phone edit functionality
   setupPhoneEdit();
 
+  // Phone formatting
+  setupPhoneFormatting();
+
   // Password reset functionality
   setupPasswordReset();
 
@@ -148,7 +151,7 @@ document.addEventListener("DOMContentLoaded", function () {
       displayFirstName: userData.first_name || "",
       displayLastName: userData.last_name || "",
       displayEmail: userData.email || "",
-      editPhone: userData.phone || "",
+      editPhone: formatPhoneDisplay(userData.phone) || "",
       displayBirthDate: userData.birth_date || "",
     };
 
@@ -242,14 +245,19 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!editPhone || !updatePhoneBtn) return;
 
     const newPhone = editPhone.value.trim();
+    // Clean phone number for API (remove formatting)
+    const cleanPhone = newPhone.replace(/[^\d+]/g, "");
 
-    if (!newPhone) {
+    if (!cleanPhone) {
       showNotification("Telefon nömrəsi tələb olunur", "error");
       return;
     }
 
-    if (!isValidPhone(newPhone)) {
-      showNotification("Düzgün telefon nömrəsi daxil edin", "error");
+    if (!isValidPhone(cleanPhone)) {
+      showNotification(
+        "Düzgün telefon nömrəsi daxil edin (+994XXXXXXXXX)",
+        "error"
+      );
       return;
     }
 
@@ -258,7 +266,7 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const accessToken = localStorage.getItem("depod_access_token");
       const formData = new FormData();
-      formData.append("phone", newPhone);
+      formData.append("phone", cleanPhone);
 
       const response = await fetch(`${API_BASE}/api/auth/update-phone/`, {
         method: "POST",
@@ -272,10 +280,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
 
       if (response.ok) {
-        // Update localStorage
+        // Update localStorage with clean phone number
         const userData = JSON.parse(localStorage.getItem("depod_user") || "{}");
-        userData.phone = newPhone;
+        userData.phone = cleanPhone;
         localStorage.setItem("depod_user", JSON.stringify(userData));
+
+        // Format and display the phone number nicely
+        editPhone.value = formatPhoneDisplay(cleanPhone);
 
         // Reset edit mode
         editPhone.setAttribute("readonly", true);
@@ -513,8 +524,92 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Utility functions
   function isValidPhone(phone) {
-    const phoneRegex = /^\+?994[0-9]{9}$|^\+?[0-9]{10,15}$/;
-    return phoneRegex.test(phone);
+    // Remove all non-digit characters except +
+    const cleanPhone = phone.replace(/[^\d+]/g, "");
+
+    // Azerbaijan phone number patterns:
+    // +994xxxxxxxxx (with country code)
+    // 0xxxxxxxxx (local format)
+    // xxxxxxxxx (without leading zero)
+    const azerbaijanPatterns = [
+      /^\+994[1-9]\d{8}$/, // +994xxxxxxxxx
+      /^0[1-9]\d{8}$/, // 0xxxxxxxxx
+      /^[1-9]\d{8}$/, // xxxxxxxxx
+      /^\+?994[1-9]\d{8}$/, // Optional + before 994
+    ];
+
+    // Check if phone matches any Azerbaijan pattern
+    const isAzerbaijanPhone = azerbaijanPatterns.some((pattern) =>
+      pattern.test(cleanPhone)
+    );
+
+    // Also allow international format (10-15 digits)
+    const internationalPattern = /^\+?[1-9]\d{9,14}$/;
+    const isInternationalPhone = internationalPattern.test(cleanPhone);
+
+    return isAzerbaijanPhone || isInternationalPhone;
+  }
+
+  // Format phone number for display
+  function formatPhoneDisplay(phone) {
+    if (!phone) return "";
+
+    // Remove all non-digit characters except +
+    const cleanPhone = phone.replace(/[^\d+]/g, "");
+
+    // Format Azerbaijan numbers
+    if (cleanPhone.startsWith("+994")) {
+      const number = cleanPhone.substring(4);
+      if (number.length === 9) {
+        return `+994 ${number.substring(0, 2)} ${number.substring(
+          2,
+          5
+        )} ${number.substring(5, 7)} ${number.substring(7)}`;
+      }
+    } else if (cleanPhone.startsWith("994")) {
+      const number = cleanPhone.substring(3);
+      if (number.length === 9) {
+        return `+994 ${number.substring(0, 2)} ${number.substring(
+          2,
+          5
+        )} ${number.substring(5, 7)} ${number.substring(7)}`;
+      }
+    } else if (cleanPhone.startsWith("0") && cleanPhone.length === 10) {
+      const number = cleanPhone.substring(1);
+      return `+994 ${number.substring(0, 2)} ${number.substring(
+        2,
+        5
+      )} ${number.substring(5, 7)} ${number.substring(7)}`;
+    }
+
+    return phone; // Return original if no formatting rules match
+  }
+
+  // Auto-format phone input as user types
+  function setupPhoneFormatting() {
+    const editPhone = document.getElementById("editPhone");
+    if (!editPhone) return;
+
+    editPhone.addEventListener("input", function (e) {
+      if (this.hasAttribute("readonly")) return;
+
+      let value = e.target.value.replace(/[^\d+]/g, "");
+
+      // Auto-add +994 for Azerbaijan numbers
+      if (
+        value.length > 0 &&
+        !value.startsWith("+") &&
+        !value.startsWith("994")
+      ) {
+        if (value.startsWith("0")) {
+          value = "+994" + value.substring(1);
+        } else if (value.length <= 9) {
+          value = "+994" + value;
+        }
+      }
+
+      e.target.value = value;
+    });
   }
 
   function setLoadingState(button, isLoading) {
@@ -580,4 +675,380 @@ document.addEventListener("DOMContentLoaded", function () {
     // Redirect to home page
     window.location.href = "index.html";
   }
+
+  // Orders functionality
+  function loadOrders() {
+    let orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+
+    const ordersList = document.getElementById("ordersList");
+    const noOrders = ordersList.querySelector(".no-orders");
+
+    if (orders.length === 0) {
+      noOrders.style.display = "flex";
+      return;
+    }
+
+    noOrders.style.display = "none";
+
+    // Sort orders by date (newest first)
+    const sortedOrders = orders.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    const ordersHTML = sortedOrders
+      .map((order) => createOrderCard(order))
+      .join("");
+    ordersList.innerHTML =
+      ordersHTML + ordersList.querySelector(".no-orders").outerHTML;
+
+    // Add filter functionality
+    setupOrderFilters();
+  }
+
+  function createOrderCard(order) {
+    const orderDate = new Date(order.createdAt).toLocaleDateString("az-AZ");
+    const estimatedDelivery = new Date(
+      order.estimatedDelivery
+    ).toLocaleDateString("az-AZ");
+
+    return `
+      <div class="order-card" data-status="${order.status}">
+        <div class="order-header">
+          <div class="order-info">
+            <h4>Sifariş #${order.id}</h4>
+            <p class="order-date">${orderDate} tarixində verildi</p>
+          </div>
+          <span class="order-status ${
+            order.status
+          }">${getStatusText(order.status)}</span>
+        </div>
+        
+        <div class="order-items">
+          <div class="order-item">
+            <img src="${
+              order.productImage
+            }" alt="${order.productName}" class="order-item-image">
+            <div class="order-item-details">
+              <h5>${order.productName}</h5>
+              <p>Miqdar: ${
+                order.quantity
+              } | Vahid qiyməti: ${order.unitPrice.toFixed(2)} ₼</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="order-footer">
+          <div class="order-total">
+            Ümumi: ${order.totalPrice.toFixed(2)} ₼
+          </div>
+          <div class="order-actions">
+            ${
+              order.status === "pending"
+                ? '<button class="order-btn" onclick="cancelOrder(\'' +
+                  order.id +
+                  "')\">Ləğv et</button>"
+                : ""
+            }
+            <button class="order-btn primary" onclick="trackOrder('${
+              order.id
+            }')">İzlə</button>
+          </div>
+        </div>
+        
+        ${
+          order.status === "shipped"
+            ? `<div class="delivery-info">
+            <i class="fas fa-truck"></i>
+            <span>Təxmini çatdırılma tarixi: ${estimatedDelivery}</span>
+          </div>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  function getStatusText(status) {
+    const statusMap = {
+      pending: "Gözləyən",
+      processing: "İşlənən",
+      shipped: "Göndərilən",
+      delivered: "Çatdırılan",
+      cancelled: "Ləğv edildi",
+    };
+    return statusMap[status] || status;
+  }
+
+  function setupOrderFilters() {
+    const filterChips = document.querySelectorAll(".filter-chip");
+
+    filterChips.forEach((chip) => {
+      chip.addEventListener("click", function () {
+        // Update active filter
+        filterChips.forEach((c) => c.classList.remove("active"));
+        this.classList.add("active");
+
+        // Filter orders
+        const status = this.dataset.status;
+        const orderCards = document.querySelectorAll(".order-card");
+
+        orderCards.forEach((card) => {
+          if (status === "all" || card.dataset.status === status) {
+            card.style.display = "block";
+          } else {
+            card.style.display = "none";
+          }
+        });
+      });
+    });
+  }
+
+  // Global functions for order actions
+  window.cancelOrder = function (orderId) {
+    if (confirm("Sifarişi ləğv etmək istədiyinizə əminsiniz?")) {
+      const orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+      const orderIndex = orders.findIndex((order) => order.id === orderId);
+
+      if (orderIndex !== -1) {
+        orders[orderIndex].status = "cancelled";
+        localStorage.setItem("depod_orders", JSON.stringify(orders));
+
+        showNotification("Sifariş ləğv edildi", "success");
+        loadOrders(); // Reload orders list
+      }
+    }
+  };
+
+  window.trackOrder = function (orderId) {
+    const orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+    const order = orders.find((o) => o.id === orderId);
+
+    if (order) {
+      // Show detailed tracking info
+      showOrderTracking(order);
+    }
+  };
+
+  function showOrderTracking(order) {
+    const modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Sifariş İzləmə - #${order.id}</h3>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="tracking-steps">
+            <div class="tracking-step ${
+              ["pending", "processing", "shipped", "delivered"].indexOf(
+                order.status
+              ) >= 0
+                ? "completed"
+                : ""
+            }">
+              <div class="step-icon"><i class="fas fa-check"></i></div>
+              <div class="step-info">
+                <h4>Sifariş qəbul edildi</h4>
+                <p>${new Date(order.createdAt).toLocaleDateString("az-AZ")}</p>
+              </div>
+            </div>
+            <div class="tracking-step ${
+              ["processing", "shipped", "delivered"].indexOf(order.status) >= 0
+                ? "completed"
+                : ""
+            }">
+              <div class="step-icon"><i class="fas fa-cog"></i></div>
+              <div class="step-info">
+                <h4>Hazırlanır</h4>
+                <p>${order.status === "processing" ? "İndi" : ""}</p>
+              </div>
+            </div>
+            <div class="tracking-step ${
+              ["shipped", "delivered"].indexOf(order.status) >= 0
+                ? "completed"
+                : ""
+            }">
+              <div class="step-icon"><i class="fas fa-truck"></i></div>
+              <div class="step-info">
+                <h4>Göndərildi</h4>
+                <p>${order.status === "shipped" ? "İndi" : ""}</p>
+              </div>
+            </div>
+            <div class="tracking-step ${
+              order.status === "delivered" ? "completed" : ""
+            }">
+              <div class="step-icon"><i class="fas fa-home"></i></div>
+              <div class="step-info">
+                <h4>Çatdırıldı</h4>
+                <p>${order.status === "delivered" ? "İndi" : ""}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close modal function
+    window.closeModal = function () {
+      document.body.removeChild(modal);
+    };
+
+    // Close on overlay click
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
+
+  // Check URL parameters for tab switching
+  function checkURLParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get("tab");
+
+    if (tab && document.getElementById(tab)) {
+      // Remove active from all tabs
+      tabBtns.forEach((btn) => btn.classList.remove("active"));
+      tabContents.forEach((content) => content.classList.remove("active"));
+
+      // Activate requested tab
+      const targetBtn = document.querySelector(`[data-tab="${tab}"]`);
+      const targetContent = document.getElementById(tab);
+
+      if (targetBtn && targetContent) {
+        targetBtn.classList.add("active");
+        targetContent.classList.add("active");
+
+        // Load orders if orders tab is active
+        if (tab === "orders") {
+          loadOrders();
+        }
+      }
+    }
+  }
+
+  // Load orders when orders tab is clicked
+  tabBtns.forEach((btn) => {
+    btn.addEventListener("click", function () {
+      if (this.dataset.tab === "orders") {
+        setTimeout(() => loadOrders(), 100);
+      }
+    });
+  });
+
+  // Check URL params on page load
+  checkURLParams();
 });
+
+// CSS for tracking modal (add to style.css)
+const modalCSS = `
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.tracking-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tracking-step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.tracking-step.completed {
+  opacity: 1;
+}
+
+.step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.tracking-step.completed .step-icon {
+  background: #10b981;
+  color: white;
+}
+
+.step-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.step-info p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.delivery-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  color: #0369a1;
+  font-size: 14px;
+}
+`;
+
+// Inject modal CSS
+if (!document.getElementById("modal-styles")) {
+  const style = document.createElement("style");
+  style.id = "modal-styles";
+  style.textContent = modalCSS;
+  document.head.appendChild(style);
+}
