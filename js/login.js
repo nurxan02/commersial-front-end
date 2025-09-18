@@ -148,49 +148,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 5000);
   }
 
-  // Demo users for testing
-  const DEMO_USERS = {
-    "demo@depod.az": {
-      password: "123456",
-      user: {
-        id: 1,
-        first_name: "Demo",
-        last_name: "İstifadəçi",
-        email: "demo@depod.az",
-        phone: "+994501234567",
-        birth_date: "1995-05-15",
-        student_status: "approved",
-      },
-      access_token: "demo_access_token_12345",
-    },
-    "+994501234567": {
-      password: "123456",
-      user: {
-        id: 1,
-        first_name: "Demo",
-        last_name: "İstifadəçi",
-        email: "demo@depod.az",
-        phone: "+994501234567",
-        birth_date: "1995-05-15",
-        student_status: "approved",
-      },
-      access_token: "demo_access_token_12345",
-    },
-    "test@depod.az": {
-      password: "test123",
-      user: {
-        id: 2,
-        first_name: "Test",
-        last_name: "Kullanıcısı",
-        email: "test@depod.az",
-        phone: "+994557654321",
-        birth_date: "1990-08-20",
-        student_status: "pending",
-      },
-      access_token: "test_access_token_67890",
-    },
-  };
-
   // Handle form submission
   if (loginForm) {
     loginForm.addEventListener("submit", async function (e) {
@@ -204,32 +161,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const username = usernameInput.value.trim();
       const password = passwordInput.value.trim();
-
-      // Check for demo login first
-      if (DEMO_USERS[username] && DEMO_USERS[username].password === password) {
-        // Demo login successful
-        const demoUser = DEMO_USERS[username];
-
-        // Store user data in localStorage
-        localStorage.setItem("depod_user", JSON.stringify(demoUser.user));
-        localStorage.setItem("depod_access_token", demoUser.access_token);
-
-        showNotification(
-          "Demo giriş uğurlu! Profil səhifəsinə yönləndirilirsiz...",
-          "success"
-        );
-
-        // Redirect to profile page after 1.5 seconds
-        setTimeout(() => {
-          const redirectUrl =
-            new URLSearchParams(window.location.search).get("redirect") ||
-            "profile.html";
-          window.location.href = redirectUrl;
-        }, 1500);
-
-        setLoadingState(false);
-        return;
-      }
 
       try {
         const formData = new FormData();

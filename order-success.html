@@ -46,44 +46,39 @@
     />
   </head>
 
-  <body>
-    <!-- Header -->
-    <header class="header">
-      <div class="container">
-        <nav class="navbar">
-          <div class="nav-brand">
-            <a href="index.html" class="brand-logo">
-              <img src="image/logo.png" alt="Depod Logo" class="logo-img" />
-              <span class="brand-text">DEPOD</span>
-            </a>
-          </div>
+  <body class="order-page">
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="index.html" class="nav-logo">
+          <img src="image/logo.png" alt="Depod Logo" class="logo-icon" />
+          <span class="logo-text" translate="no">DEPOD</span>
+        </a>
 
-          <div class="nav-links" id="navLinks">
-            <a href="index.html" class="nav-link">Ana Səhifə</a>
-            <a href="products.html" class="nav-link">Məhsullar</a>
-            <a href="about.html" class="nav-link">Haqqımızda</a>
-            <a href="contact.html" class="nav-link">Əlaqə</a>
-            <div class="nav-dropdown">
-              <span class="nav-link dropdown-trigger" id="demoDropdown">
-                Demo
-                <i class="fas fa-chevron-down dropdown-icon"></i>
-              </span>
-            </div>
-          </div>
+        <div class="nav-menu" id="nav-menu">
+          <ul class="nav-list">
+            <li class="nav-item">
+              <a href="index.html" class="nav-link">Ana Səhifə</a>
+            </li>
+            <li class="nav-item">
+              <a href="products.html" class="nav-link">Məhsullar</a>
+            </li>
+            <li class="nav-item">
+              <a href="about.html" class="nav-link">Haqqımızda</a>
+            </li>
+            <li class="nav-item">
+              <a href="contact.html" class="nav-link">Əlaqə</a>
+            </li>
+          </ul>
+        </div>
 
-          <div class="nav-actions">
-            <div class="user-menu" id="userMenuContainer">
-              <!-- User menu will be populated dynamically -->
-            </div>
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-          </div>
-        </nav>
+        <div class="nav-toggle" id="nav-toggle">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
       </div>
-    </header>
+    </nav>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -106,7 +101,7 @@
             <div class="success-actions">
               <p class="redirect-message">
                 <i class="fas fa-clock"></i>
-                5 saniyə sonra sifarişlərim bölməsinə yönləndiriləcəksiniz...
+                Sifariş uğurla qeydə alındı və tezliklə emal olunacaq.
               </p>
               <div class="action-buttons">
                 <a href="profile.html?tab=orders" class="btn btn-primary">

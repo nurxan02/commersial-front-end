@@ -100,6 +100,26 @@ class ProductOfferModal {
       return;
     }
 
+    // Check if user is logged in
+    const userData = localStorage.getItem("depod_user");
+    if (!userData) {
+      // Show notification or alert
+      if (typeof showNotification === "function") {
+        showNotification(
+          "Təklif göndərmək üçün hesabınıza daxil olun!",
+          "error"
+        );
+      } else {
+        alert("Təklif göndərmək üçün hesabınıza daxil olun!");
+      }
+
+      setTimeout(() => {
+        window.location.href =
+          "login.html?redirect=" + encodeURIComponent(window.location.href);
+      }, 2000);
+      return;
+    }
+
     this.modal.classList.add("show");
     document.body.style.overflow = "hidden";
 

@@ -717,19 +717,6 @@ function updateOrderNotifications() {
   }
 }
 
-function buyNow() {
-  const quantity = parseInt(document.getElementById("quantity").value);
-  const productId = new URLSearchParams(window.location.search).get("id");
-  const product = getProductById(productId);
-
-  // Simulate buy now
-  showNotification(`${product.name} sifarişi işlənməyə göndərildi!`, "success");
-
-  // Here you would typically:
-  // 1. Redirect to checkout
-  // 2. Process immediate purchase
-}
-
 // Notification system
 function showNotification(message, type = "info") {
   // Create notification element
