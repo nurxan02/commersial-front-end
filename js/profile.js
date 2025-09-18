@@ -333,9 +333,9 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        if (newPassword.length < 6) {
+        if (newPassword.length < 8) {
           showNotification(
-            "Yeni parol ən azı 6 simvoldan ibarət olmalıdır",
+            "Yeni parol ən azı 8 simvoldan ibarət olmalıdır",
             "error"
           );
           return;

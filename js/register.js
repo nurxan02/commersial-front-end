@@ -115,10 +115,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!password) {
       showFieldError(passwordInput, "Parol tələb olunur");
       isValid = false;
-    } else if (password.length < 6) {
+    } else if (password.length < 8) {
       showFieldError(
         passwordInput,
-        "Parol ən azı 6 simvoldan ibarət olmalıdır"
+        "Parol ən azı 8 simvoldan ibarət olmalıdır"
       );
       isValid = false;
     }
@@ -384,8 +384,8 @@ document.addEventListener("DOMContentLoaded", function () {
   if (passwordInput) {
     passwordInput.addEventListener("input", function () {
       const password = this.value;
-      if (password.length > 0 && password.length < 6) {
-        showFieldError(this, "Parol ən azı 6 simvoldan ibarət olmalıdır");
+      if (password.length > 0 && password.length < 8) {
+        showFieldError(this, "Parol ən azı 8 simvoldan ibarət olmalıdır");
       } else {
         clearFieldError(this);
       }
