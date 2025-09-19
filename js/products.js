@@ -273,12 +273,30 @@ const PRODUCTS = {
   },
 };
 
+// Helpers for numeric safety
+function toNum(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function isNum(v) {
+  return typeof v === "number" && Number.isFinite(v);
+}
+function safeFixed(n, digits = 2) {
+  return isNum(n) ? n.toFixed(digits) : "—";
+}
+
 // Map API product to frontend shape
 function mapApiProduct(p) {
-  return {
+  const priceRaw = p.price ?? p.pricing?.price ?? null;
+  const discountedRaw =
+    p.discounted_price ?? p.pricing?.discounted_price ?? null;
+  const discountRaw = p.discount ?? p.pricing?.discount ?? 0;
+  const studentRaw = p.student_discount ?? p.pricing?.student_discount ?? 0;
+  const mapped = {
     id: p.id,
     name: p.name,
-    category: p.category,
+    category: p.category, // may be string or {key,name}
     images: {
       main:
         p.main_image ||
@@ -287,7 +305,18 @@ function mapApiProduct(p) {
       gallery: Array.isArray(p.images) ? p.images.map((i) => i.image) : [],
     },
     description: p.description || "",
-    features: Array.isArray(p.features) ? p.features.map((f) => f.text) : [],
+    // Pricing/stock - coerce to numbers safely
+    price: toNum(priceRaw),
+    discountedPrice: toNum(discountedRaw),
+    discount: toNum(discountRaw) ?? 0,
+    studentDiscount: toNum(studentRaw) ?? 0,
+    inStock:
+      (typeof p.in_stock === "boolean" ? p.in_stock : undefined) ??
+      (typeof p.stock === "number" ? p.stock > 0 : undefined) ??
+      true,
+    features: Array.isArray(p.features)
+      ? p.features.map((f) => f.text ?? f)
+      : [],
     specs: Array.isArray(p.specs)
       ? p.specs.reduce((acc, s) => {
           acc[s.label] = s.value;
@@ -298,6 +327,17 @@ function mapApiProduct(p) {
       ? p.highlights.map((h) => ({ number: h.number, text: h.text }))
       : [],
   };
+  // If discountedPrice missing but discount provided, derive client-side
+  if (
+    isNum(mapped.price) &&
+    mapped.discountedPrice == null &&
+    isNum(mapped.discount) &&
+    mapped.discount > 0
+  ) {
+    const v = mapped.price * (1 - mapped.discount / 100);
+    mapped.discountedPrice = Number.isFinite(v) ? Number(v.toFixed(2)) : null;
+  }
+  return mapped;
 }
 
 // Get user's student status
@@ -315,7 +355,10 @@ function getUserStudentStatus() {
 
 // Calculate price with student discount
 function calculateStudentPrice(originalPrice, studentDiscount) {
-  return originalPrice * (1 - studentDiscount / 100);
+  const base = toNum(originalPrice);
+  const d = toNum(studentDiscount) ?? 0;
+  if (!isNum(base)) return null;
+  return base * (1 - d / 100);
 }
 
 // Create price HTML
@@ -323,20 +366,23 @@ function createPriceHTML(product) {
   const isStudent = getUserStudentStatus() === "approved";
   let priceHTML = "";
 
-  if (product.discountedPrice && product.discountedPrice < product.price) {
+  const hasGeneralDiscount =
+    isNum(product.discountedPrice) &&
+    isNum(product.price) &&
+    product.discountedPrice < product.price;
+
+  if (hasGeneralDiscount) {
     // There's a general discount
+    const base = product.discountedPrice;
     const currentPrice = isStudent
-      ? calculateStudentPrice(
-          product.discountedPrice,
-          product.studentDiscount || 0
-        )
-      : product.discountedPrice;
+      ? calculateStudentPrice(base, product.studentDiscount || 0)
+      : base;
 
     priceHTML = `
       <div class="product-price">
         <div class="price-row">
-          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
-          <span class="price-original">${product.price.toFixed(2)} ₼</span>
+          <span class="price-current">${safeFixed(currentPrice)} ₼</span>
+          <span class="price-original">${safeFixed(product.price)} ₼</span>
         </div>
         <div class="discount-badges">
           <span class="price-discount">-${product.discount}%</span>
@@ -360,18 +406,19 @@ function createPriceHTML(product) {
     `;
   } else {
     // No general discount, but maybe student discount
+    const base = product.price;
     const currentPrice = isStudent
-      ? calculateStudentPrice(product.price, product.studentDiscount || 0)
-      : product.price;
+      ? calculateStudentPrice(base, product.studentDiscount || 0)
+      : base;
 
     priceHTML = `
       <div class="product-price">
         <div class="price-row">
-          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
+      <span class="price-current">${safeFixed(currentPrice)} ₼</span>
           ${
             isStudent && product.studentDiscount
-              ? `<span class="price-original">${product.price.toFixed(
-                  2
+              ? `<span class="price-original">${safeFixed(
+                  product.price
                 )} ₼</span>`
               : ""
           }
@@ -416,7 +463,12 @@ async function getProductsByCategory(category) {
   if (category === "all") return getAllProducts();
   try {
     const list = await window.API.listProducts(category);
-    return list.map(mapApiProduct);
+    const mapped = list.map(mapApiProduct);
+    // Fallback UX: if selected category is empty, show all products
+    if (!Array.isArray(mapped) || mapped.length === 0) {
+      return getAllProducts();
+    }
+    return mapped;
   } catch (e) {
     return Object.values(PRODUCTS).filter(
       (product) => product.category === category
@@ -427,7 +479,18 @@ async function getProductsByCategory(category) {
 // Get single product by ID
 async function getProductById(id) {
   try {
-    const p = await window.API.getProduct(id);
+    let p = await window.API.getProduct(id);
+    // If pricing not present, fetch pricing
+    if (
+      p.price == null &&
+      p.discounted_price == null &&
+      typeof window.API.getProductPricing === "function"
+    ) {
+      try {
+        const pr = await window.API.getProductPricing(id);
+        p = { ...p, pricing: pr };
+      } catch (_) {}
+    }
     return mapApiProduct(p);
   } catch (e) {
     return PRODUCTS[id];

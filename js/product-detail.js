@@ -27,31 +27,66 @@ function calculateStudentPrice(originalPrice, studentDiscount) {
   return originalPrice * (1 - studentDiscount / 100);
 }
 
+// Numeric safety helpers
+function toNum(v) {
+  if (v === null || v === undefined || v === "") return NaN;
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : NaN;
+}
+function isNum(v) {
+  return typeof v === "number" && Number.isFinite(v);
+}
+function safeFixed(v, digits) {
+  const n = toNum(v);
+  return Number.isFinite(n) ? n.toFixed(digits) : "";
+}
+
 function createPriceHTML(product) {
   const isStudent = getUserStudentStatus() === "approved";
   let priceHTML = "";
 
-  if (product.discountedPrice && product.discountedPrice < product.price) {
-    const currentPrice = isStudent
-      ? calculateStudentPrice(
-          product.discountedPrice,
-          product.studentDiscount || 0
-        )
-      : product.discountedPrice;
+  const price = toNum(product.price);
+  const discounted = toNum(product.discountedPrice);
+  const discountPct = toNum(product.discount);
+  const studentPct = toNum(product.studentDiscount);
+
+  const hasGeneralDiscount =
+    isNum(discounted) && (isNum(price) ? discounted < price : true);
+
+  const computeStudent = (val) =>
+    isNum(val) && isNum(studentPct) && studentPct > 0
+      ? val * (1 - studentPct / 100)
+      : val;
+
+  if (hasGeneralDiscount) {
+    const base = discounted;
+    const current = isStudent ? computeStudent(base) : base;
 
     priceHTML = `
       <div class="product-price-detail">
         <div class="price-row">
-          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
-          <span class="price-original">${product.price.toFixed(2)} ₼</span>
+          <span class="price-current">${safeFixed(current, 2)} ₼</span>
+          ${
+            isNum(price)
+              ? `<span class="price-original">${safeFixed(price, 2)} ₼</span>`
+              : ""
+          }
         </div>
         <div class="discount-badges">
-          <span class="price-discount">-${product.discount}%</span>
           ${
-            isStudent
-              ? `<span class="student-discount-badge">+${
-                  product.studentDiscount || 0
-                }% Tələbə</span>`
+            isNum(discountPct) && discountPct > 0
+              ? `<span class="price-discount">-${safeFixed(
+                  discountPct,
+                  0
+                )}%</span>`
+              : ""
+          }
+          ${
+            isStudent && isNum(studentPct) && studentPct > 0
+              ? `<span class="student-discount-badge">+${safeFixed(
+                  studentPct,
+                  0
+                )}% Tələbə</span>`
               : ""
           }
         </div>
@@ -66,27 +101,27 @@ function createPriceHTML(product) {
       </div>
     `;
   } else {
-    const currentPrice = isStudent
-      ? calculateStudentPrice(product.price, product.studentDiscount || 0)
-      : product.price;
+    const base = isNum(price) ? price : discounted; // fallback if only one is available
+    const current = isStudent ? computeStudent(base) : base;
 
     priceHTML = `
       <div class="product-price-detail">
         <div class="price-row">
-          <span class="price-current">${currentPrice.toFixed(2)} ₼</span>
+          <span class="price-current">${safeFixed(current, 2)} ₼</span>
           ${
-            isStudent && product.studentDiscount
-              ? `<span class="price-original">${product.price.toFixed(
-                  2
-                )} ₼</span>`
+            isStudent && isNum(studentPct) && studentPct > 0 && isNum(price)
+              ? `<span class="price-original">${safeFixed(price, 2)} ₼</span>`
               : ""
           }
         </div>
         ${
-          isStudent && product.studentDiscount
+          isStudent && isNum(studentPct) && studentPct > 0
             ? `
           <div class="discount-badges">
-            <span class="student-discount-badge">-${product.studentDiscount}% Tələbə</span>
+            <span class="student-discount-badge">-${safeFixed(
+              studentPct,
+              0
+            )}% Tələbə</span>
           </div>
         `
             : ""
@@ -121,6 +156,34 @@ async function getProductById(productId) {
         // avoid recursion; call API directly instead
         const p = await window.API.getProduct(productId);
         // inline a small mapper (duplicated minimal) to avoid circular import
+        // Try to enrich with pricing if not present
+        let pricing = null;
+        if (
+          p.price == null &&
+          p.discounted_price == null &&
+          typeof window.API.getProductPricing === "function"
+        ) {
+          try {
+            pricing = await window.API.getProductPricing(productId);
+          } catch (_) {}
+        }
+        const rawPrice = p.price ?? pricing?.price ?? null;
+        const rawDisc = p.discounted_price ?? pricing?.discounted_price ?? null;
+        const price = isNum(toNum(rawPrice)) ? toNum(rawPrice) : null;
+        const discountedPrice = isNum(toNum(rawDisc)) ? toNum(rawDisc) : null;
+        const discount = isNum(toNum(p.discount ?? pricing?.discount ?? 0))
+          ? toNum(p.discount ?? pricing?.discount ?? 0)
+          : 0;
+        const studentDiscount = isNum(
+          toNum(p.student_discount ?? pricing?.student_discount ?? 0)
+        )
+          ? toNum(p.student_discount ?? pricing?.student_discount ?? 0)
+          : 0;
+        const inStock =
+          (typeof p.in_stock === "boolean" ? p.in_stock : undefined) ??
+          (typeof p.stock === "number" ? p.stock > 0 : undefined) ??
+          true;
+
         return {
           id: p.id,
           name: p.name,
@@ -147,6 +210,15 @@ async function getProductById(productId) {
           highlights: Array.isArray(p.highlights)
             ? p.highlights.map((h) => ({ number: h.number, text: h.text }))
             : [],
+          price,
+          discountedPrice:
+            discountedPrice ??
+            (price != null && discount
+              ? +(price * (1 - discount / 100)).toFixed(2)
+              : null),
+          discount,
+          studentDiscount,
+          inStock: Boolean(inStock),
         };
       }
     }
@@ -588,7 +660,7 @@ function findStore() {
 }
 
 // Order creation system
-function createOrder(productId, quantity) {
+async function createOrder(productId, quantity) {
   try {
     const userData = JSON.parse(localStorage.getItem("depod_user"));
     const product = currentProduct; // From global scope
@@ -600,38 +672,96 @@ function createOrder(productId, quantity) {
 
     // Calculate total price
     const isStudent = getUserStudentStatus() === "approved";
-    let unitPrice = product.discountedPrice || product.price;
-
-    if (isStudent && product.studentDiscount) {
-      unitPrice = calculateStudentPrice(unitPrice, product.studentDiscount);
+    let unitPrice = isNum(toNum(product.discountedPrice))
+      ? toNum(product.discountedPrice)
+      : toNum(product.price);
+    if (
+      isNaN(unitPrice) &&
+      typeof window.API?.getProductPricing === "function"
+    ) {
+      try {
+        const pr = await window.API.getProductPricing(productId);
+        unitPrice = isNum(toNum(pr?.discounted_price))
+          ? toNum(pr.discounted_price)
+          : toNum(pr?.price);
+      } catch (_) {}
     }
-
+    if (isStudent && isNum(toNum(product.studentDiscount))) {
+      unitPrice = calculateStudentPrice(
+        unitPrice,
+        toNum(product.studentDiscount)
+      );
+    }
     const totalPrice = unitPrice * quantity;
 
-    // Create order object
-    const order = {
-      id: generateOrderId(),
-      userId: userData.id,
-      productId: productId,
-      productName: product.name,
-      productImage: product.images.main,
-      quantity: quantity,
-      unitPrice: unitPrice,
-      totalPrice: totalPrice,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-      estimatedDelivery: getEstimatedDelivery(),
+    // Try backend order creation first
+    let orderPayload = {
+      product_id: productId,
+      quantity,
+      pricing_snapshot: {
+        unit_price: unitPrice,
+        student_applied: isStudent,
+      },
     };
 
-    // Save order to localStorage
-    const existingOrders = JSON.parse(
-      localStorage.getItem("depod_orders") || "[]"
-    );
-    existingOrders.push(order);
-    localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
+    let createdOrder = null;
+    if (window.API && typeof window.API.createOrder === "function") {
+      try {
+        createdOrder = await window.API.createOrder(orderPayload);
+      } catch (e) {
+        console.warn("Backend createOrder failed, falling back:", e.message);
+      }
+    }
 
-    // Initiate payment process
-    initiatePayment(order);
+    if (!createdOrder) {
+      // Fallback to localStorage order simulation
+      const order = {
+        id: generateOrderId(),
+        userId: userData?.id,
+        productId: productId,
+        productName: product.name,
+        productImage: product.images.main,
+        quantity: quantity,
+        unitPrice: unitPrice,
+        totalPrice: totalPrice,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        estimatedDelivery: getEstimatedDelivery(),
+      };
+      const existingOrders = JSON.parse(
+        localStorage.getItem("depod_orders") || "[]"
+      );
+      existingOrders.push(order);
+      localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
+      initiatePayment(order);
+      return;
+    }
+
+    // If backend order created, shape minimal order for payment
+    const orderForPayment = {
+      id: createdOrder.id || generateOrderId(),
+      productId,
+      productName: product.name,
+      productImage: product.images.main,
+      quantity,
+      unitPrice,
+      totalPrice: createdOrder.total_price ?? totalPrice,
+      status: createdOrder.status || "pending",
+      createdAt: createdOrder.created_at || new Date().toISOString(),
+      estimatedDelivery:
+        createdOrder.estimated_delivery || getEstimatedDelivery(),
+    };
+
+    // Optionally persist a light copy for UI badges
+    try {
+      const existingOrders = JSON.parse(
+        localStorage.getItem("depod_orders") || "[]"
+      );
+      existingOrders.push(orderForPayment);
+      localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
+    } catch (_) {}
+
+    initiatePayment(orderForPayment);
   } catch (error) {
     console.error("Order creation failed:", error);
     showNotification("Sifarişin yaradılmasında xəta baş verdi!", "error");

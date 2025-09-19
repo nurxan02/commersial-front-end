@@ -511,7 +511,30 @@ document.addEventListener("DOMContentLoaded", function () {
         if (documentPending) documentPending.style.display = "block";
         break;
       case "approved":
-        if (documentApproved) documentApproved.style.display = "block";
+        if (documentApproved) {
+          documentApproved.style.display = "block";
+          // Attempt to load QR code dynamically if supported by backend
+          try {
+            if (window.API && typeof window.API.getStudentQr === "function") {
+              window.API.getStudentQr()
+                .then((qr) => {
+                  const container =
+                    documentApproved.querySelector(".qr-container") ||
+                    documentApproved;
+                  if (qr?.qr_image_url) {
+                    const img = new Image();
+                    img.src = qr.qr_image_url;
+                    img.alt = "Tələbə endirimi QR";
+                    img.style.maxWidth = "180px";
+                    container.appendChild(img);
+                  } else if (qr?.qr_svg && typeof qr.qr_svg === "string") {
+                    container.insertAdjacentHTML("beforeend", qr.qr_svg);
+                  }
+                })
+                .catch(() => {});
+            }
+          } catch (_) {}
+        }
         break;
       case "rejected":
         if (documentRejected) documentRejected.style.display = "block";
@@ -677,8 +700,37 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Orders functionality
-  function loadOrders() {
-    let orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+  async function loadOrders() {
+    let orders = [];
+    if (window.API && typeof window.API.getOrders === "function") {
+      try {
+        const apiOrders = await window.API.getOrders();
+        const list = Array.isArray(apiOrders?.results)
+          ? apiOrders.results
+          : apiOrders;
+        orders = (Array.isArray(list) ? list : []).map((o) => ({
+          id: o.id,
+          status: o.status,
+          createdAt: o.created_at || o.createdAt || new Date().toISOString(),
+          estimatedDelivery:
+            o.estimated_delivery ||
+            o.estimatedDelivery ||
+            new Date(Date.now() + 3 * 86400000).toISOString(),
+          productName: o.items?.[0]?.name || o.product_name || "Məhsul",
+          productImage: o.items?.[0]?.image || o.product_image || "",
+          quantity: o.items?.[0]?.quantity || o.quantity || 1,
+          unitPrice:
+            o.items?.[0]?.unit_price || o.unit_price || o.total_price || 0,
+          totalPrice:
+            o.total_price ||
+            (o.items?.[0]?.unit_price || 0) * (o.items?.[0]?.quantity || 1),
+        }));
+      } catch (e) {
+        orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+      }
+    } else {
+      orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+    }
 
     const ordersList = document.getElementById("ordersList");
     const noOrders = ordersList.querySelector(".no-orders");

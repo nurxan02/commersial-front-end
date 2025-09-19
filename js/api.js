@@ -192,6 +192,58 @@
     return resp.json();
   }
 
+  // Optional helpers for additional endpoints used by the frontend (safe to 404)
+  async function getOrder(orderId) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(
+      apiUrl(`/api/orders/${encodeURIComponent(orderId)}/`),
+      {
+        method: "GET",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+      }
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function getStudentQr() {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(apiUrl(`/api/auth/student-qr/`), {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      credentials: "include",
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json(); // e.g., { qr_image_url: "..." } or { qr_svg: "..." }
+  }
+
+  async function getSocialLinks() {
+    const resp = await fetch(apiUrl(`/api/settings/social-links/`), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json(); // e.g., { instagram, tiktok, facebook }
+  }
+
+  // Legal documents (Terms & Privacy) URLs
+  async function getLegalDocs() {
+    const resp = await fetch(apiUrl(`/api/settings/legal-docs/`), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    // expected: { terms_pdf_url: string, privacy_pdf_url: string }
+    return resp.json();
+  }
+
   window.API = {
     setBase,
     listProducts,
@@ -202,6 +254,10 @@
     updateOrderStatus,
     getProductPricing,
     getStudentDiscount,
+    getOrder,
+    getStudentQr,
+    getSocialLinks,
+    getLegalDocs,
     _url: apiUrl,
   };
 })();

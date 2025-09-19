@@ -1,0 +1,70 @@
+from django.db import models
+
+
+class SiteSettings(models.Model):
+    instagram = models.URLField(blank=True, null=True)
+    tiktok = models.URLField(blank=True, null=True)
+    facebook = models.URLField(blank=True, null=True)
+    terms_pdf = models.FileField(upload_to='legal/', null=True, blank=True)
+    privacy_pdf = models.FileField(upload_to='legal/', null=True, blank=True)
+    footer_description = models.TextField(blank=True)
+    footer_email = models.EmailField(blank=True)
+    footer_phone = models.CharField(max_length=64, blank=True)
+    footer_bottom_text = models.TextField(blank=True)
+
+
+class AboutContent(models.Model):
+    title = models.CharField(max_length=255)
+    subtitle = models.CharField(max_length=255, blank=True)
+    story = models.TextField(blank=True)
+    experience_years = models.IntegerField(default=0)
+    product_models = models.IntegerField(default=0)
+    happy_customers = models.IntegerField(default=0)
+    quality_rating = models.CharField(max_length=50, blank=True)
+    mission = models.TextField(blank=True)
+    vision = models.TextField(blank=True)
+    values = models.JSONField(default=list, blank=True)
+    team = models.JSONField(default=list, blank=True)
+    technology_title = models.CharField(max_length=255, blank=True)
+    technology_text = models.TextField(blank=True)
+    technology_features = models.JSONField(default=list, blank=True)
+    technology_stats = models.JSONField(default=list, blank=True)
+    contact_title = models.CharField(max_length=255, blank=True)
+    contact_text = models.TextField(blank=True)
+
+
+class ContactContent(models.Model):
+    hero_title = models.CharField(max_length=255, blank=True)
+    hero_subtitle = models.TextField(blank=True)
+    email_primary = models.EmailField(blank=True)
+    email_secondary = models.EmailField(blank=True)
+    phone_primary = models.CharField(max_length=50, blank=True)
+    phone_secondary = models.CharField(max_length=50, blank=True)
+    address_line1 = models.CharField(max_length=255, blank=True)
+    address_line2 = models.CharField(max_length=255, blank=True)
+    working_hours = models.JSONField(default=list, blank=True)
+    form_title = models.CharField(max_length=255, blank=True)
+    form_text = models.TextField(blank=True)
+    support_title = models.CharField(max_length=255, blank=True)
+    support_text = models.TextField(blank=True)
+    support_phone = models.CharField(max_length=50, blank=True)
+    catalog_title = models.CharField(max_length=255, blank=True)
+    catalog_text = models.TextField(blank=True)
+    catalog_link = models.URLField(blank=True)
+    faqs = models.JSONField(default=list, blank=True)
+    map_section_title = models.CharField(max_length=255, blank=True)
+    map_heading = models.CharField(max_length=255, blank=True)
+    map_address = models.CharField(max_length=255, blank=True)
+    map_button_text = models.CharField(max_length=255, blank=True)
+    map_url = models.URLField(blank=True)
+
+
+class ContactMessage(models.Model):
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    email = models.EmailField()
+    phone = models.CharField(max_length=50)
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    privacy_accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)

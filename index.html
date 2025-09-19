@@ -21,10 +21,15 @@
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#000000" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- Backend API Base (set in production) -->
+    <!-- <meta name="depod-api-base" content="https://api.yourdomain.com" /> -->
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+
+    <!-- API Base for local backend -->
+    <meta name="depod-api-base" content="http://127.0.0.1:8000" />
     <meta name="apple-mobile-web-app-title" content="Depod" />
 
     <!-- Favicons -->
@@ -273,7 +278,7 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="js/api.js"></script>
+    <script src="js/api.js?v=20250919-1"></script>
     <script src="js/main.js"></script>
     <script src="js/animations.js"></script>
     <script src="js/footer.js"></script>

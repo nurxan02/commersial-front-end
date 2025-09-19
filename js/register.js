@@ -20,6 +20,29 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   const agreeTermsCheckbox = document.getElementById("agreeTerms");
   const registerBtn = document.getElementById("registerBtn");
+  const termsLinkEl = document.getElementById("termsLink");
+  const privacyLinkEl = document.getElementById("privacyLink");
+
+  // Load legal document links from API (if available)
+  (async function loadLegalDocs() {
+    try {
+      if (!window.API || !window.API.getLegalDocs) return;
+      const docs = await window.API.getLegalDocs();
+      const termsUrl = docs?.terms_pdf_url || docs?.termsUrl || docs?.terms;
+      const privacyUrl =
+        docs?.privacy_pdf_url || docs?.privacyUrl || docs?.privacy;
+
+      if (termsUrl && termsLinkEl) {
+        termsLinkEl.href = termsUrl;
+      }
+      if (privacyUrl && privacyLinkEl) {
+        privacyLinkEl.href = privacyUrl;
+      }
+    } catch (e) {
+      // Silent fallback to existing # links
+      console.warn("Failed to load legal docs:", e);
+    }
+  })();
 
   // Password visibility toggles
   function setupPasswordToggle(toggleBtn, passwordField) {

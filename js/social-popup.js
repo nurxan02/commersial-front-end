@@ -7,14 +7,29 @@
 
   const SHOW_DELAY_MS = 5000;
 
-  // Replace with real profiles
-  const LINKS = {
+  // Links can come from backend settings; fallback to static
+  const DEFAULT_LINKS = {
     instagram: "https://instagram.com/depod",
     tiktok: "https://www.tiktok.com/@depod",
     facebook: "https://facebook.com/depod",
   };
 
-  function createPopup() {
+  async function loadLinks() {
+    try {
+      if (window.API && typeof window.API.getSocialLinks === "function") {
+        const cfg = await window.API.getSocialLinks();
+        return {
+          instagram: cfg.instagram || DEFAULT_LINKS.instagram,
+          tiktok: cfg.tiktok || DEFAULT_LINKS.tiktok,
+          facebook: cfg.facebook || DEFAULT_LINKS.facebook,
+        };
+      }
+    } catch (_) {}
+    return DEFAULT_LINKS;
+  }
+
+  async function createPopup() {
+    const LINKS = await loadLinks();
     const overlay = document.createElement("div");
     overlay.className = "social-popup-overlay";
     overlay.innerHTML = `
