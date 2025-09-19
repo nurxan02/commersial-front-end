@@ -359,7 +359,7 @@ function updateNavbarForLoggedInUser(userName) {
       <a href="#" class="nav-link profile-toggle" id="profileToggle">
         <span class="user-name">${userName}</span>
         <i class="fas fa-chevron-down"></i>
-        <div class="notification-badge" id="orderNotificationBadge" style="display: none;">0</div>
+        
       </a>
       <div class="profile-dropdown-menu" id="profileDropdown">
         <a href="profile.html" class="dropdown-item">
@@ -367,7 +367,6 @@ function updateNavbarForLoggedInUser(userName) {
         </a>
         <a href="profile.html?tab=orders" class="dropdown-item">
           <i class="fas fa-shopping-bag"></i> Sifarişlər
-          <span class="order-count" id="orderCount"></span>
         </a>
         <a href="#" class="dropdown-item" id="navLogoutBtn">
           <i class="fas fa-sign-out-alt"></i> Çıxış

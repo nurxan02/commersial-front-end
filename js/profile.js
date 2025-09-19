@@ -1,9 +1,12 @@
 // Profile page functionality
 document.addEventListener("DOMContentLoaded", function () {
-  // API Base configuration
-  const API_BASE =
-    window.DEPOD_API_BASE ||
-    (window.location.port === "8000" ? "" : "http://127.0.0.1:8000");
+  // Keep the latest loaded orders in memory for actions like track/cancel
+  let currentOrders = [];
+  // API URL helper (reuse global API base from api.js)
+  const apiUrl = (p) =>
+    window.API && typeof window.API._url === "function"
+      ? window.API._url(p)
+      : p;
 
   // Check authentication status
   checkAuthStatus();
@@ -100,7 +103,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateProfileUI(userData);
 
       // Fetch fresh data from API
-      const response = await fetch(`${API_BASE}/api/auth/profile/`, {
+      const response = await fetch(apiUrl(`/api/auth/profile/`), {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -268,7 +271,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const formData = new FormData();
       formData.append("phone", cleanPhone);
 
-      const response = await fetch(`${API_BASE}/api/auth/update-phone/`, {
+      const response = await fetch(apiUrl(`/api/auth/update-phone/`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -359,11 +362,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       const accessToken = localStorage.getItem("depod_access_token");
+      // Prevent same new/current on client too
+      if (currentPassword === newPassword) {
+        showNotification("Yeni parol cari parolla eyni ola bilməz", "error");
+        return;
+      }
       const formData = new FormData();
       formData.append("current_password", currentPassword);
       formData.append("new_password", newPassword);
 
-      const response = await fetch(`${API_BASE}/api/auth/change-password/`, {
+      const apiUrl = (p) =>
+        window.API && typeof window.API._url === "function"
+          ? window.API._url(p)
+          : p;
+      const response = await fetch(apiUrl(`/api/auth/change-password/`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -379,9 +391,22 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("passwordResetForm").reset();
         showNotification("Parol uğurla dəyişdirildi", "success");
       } else {
-        const errorMessage =
-          data.message || data.error || "Parol dəyişdirilərkən xəta baş verdi";
-        showNotification(errorMessage, "error");
+        // Prefer field-specific messages if available
+        if (data.errors && typeof data.errors === "object") {
+          const msg =
+            data.errors.new_password?.[0] ||
+            data.errors.current_password?.[0] ||
+            data.message ||
+            data.error ||
+            "Parol dəyişdirilərkən xəta baş verdi";
+          showNotification(msg, "error");
+        } else {
+          const errorMessage =
+            data.message ||
+            data.error ||
+            "Parol dəyişdirilərkən xəta baş verdi";
+          showNotification(errorMessage, "error");
+        }
       }
     } catch (error) {
       console.error("Password change error:", error);
@@ -708,23 +733,30 @@ document.addEventListener("DOMContentLoaded", function () {
         const list = Array.isArray(apiOrders?.results)
           ? apiOrders.results
           : apiOrders;
-        orders = (Array.isArray(list) ? list : []).map((o) => ({
-          id: o.id,
-          status: o.status,
-          createdAt: o.created_at || o.createdAt || new Date().toISOString(),
-          estimatedDelivery:
-            o.estimated_delivery ||
-            o.estimatedDelivery ||
-            new Date(Date.now() + 3 * 86400000).toISOString(),
-          productName: o.items?.[0]?.name || o.product_name || "Məhsul",
-          productImage: o.items?.[0]?.image || o.product_image || "",
-          quantity: o.items?.[0]?.quantity || o.quantity || 1,
-          unitPrice:
-            o.items?.[0]?.unit_price || o.unit_price || o.total_price || 0,
-          totalPrice:
-            o.total_price ||
-            (o.items?.[0]?.unit_price || 0) * (o.items?.[0]?.quantity || 1),
-        }));
+        const toNum = (v) => {
+          const n = Number(v);
+          return Number.isFinite(n) ? n : 0;
+        };
+        orders = (Array.isArray(list) ? list : []).map((o) => {
+          const item = o.items?.[0] || {};
+          const qty = toNum(item.quantity || o.quantity || 1);
+          const unit = toNum(item.unit_price || o.unit_price || 0);
+          const total = toNum(o.total_price || unit * qty);
+          return {
+            id: o.id,
+            status: o.status,
+            createdAt: o.created_at || o.createdAt || new Date().toISOString(),
+            estimatedDelivery:
+              o.estimated_delivery ||
+              o.estimatedDelivery ||
+              new Date(Date.now() + 3 * 86400000).toISOString(),
+            productName: item.name || o.product_name || "Məhsul",
+            productImage: item.image || o.product_image || "",
+            quantity: qty,
+            unitPrice: unit,
+            totalPrice: total,
+          };
+        });
       } catch (e) {
         orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
       }
@@ -747,6 +779,9 @@ document.addEventListener("DOMContentLoaded", function () {
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
+    // cache for actions
+    currentOrders = sortedOrders;
+
     const ordersHTML = sortedOrders
       .map((order) => createOrderCard(order))
       .join("");
@@ -762,6 +797,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const estimatedDelivery = new Date(
       order.estimatedDelivery
     ).toLocaleDateString("az-AZ");
+    const safeFixed = (v, d = 2) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(d) : "0.00";
+    };
 
     return `
       <div class="order-card" data-status="${order.status}">
@@ -778,27 +817,25 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="order-items">
           <div class="order-item">
             <img src="${
-              order.productImage
+              order.productImage || "image/material/earphone/TWS-001-white.jpg"
             }" alt="${order.productName}" class="order-item-image">
             <div class="order-item-details">
               <h5>${order.productName}</h5>
               <p>Miqdar: ${
                 order.quantity
-              } | Vahid qiyməti: ${order.unitPrice.toFixed(2)} ₼</p>
+              } | Vahid qiyməti: ${safeFixed(order.unitPrice, 2)} ₼</p>
             </div>
           </div>
         </div>
         
         <div class="order-footer">
           <div class="order-total">
-            Ümumi: ${order.totalPrice.toFixed(2)} ₼
+            Ümumi: ${safeFixed(order.totalPrice, 2)} ₼
           </div>
           <div class="order-actions">
             ${
               order.status === "pending"
-                ? '<button class="order-btn" onclick="cancelOrder(\'' +
-                  order.id +
-                  "')\">Ləğv et</button>"
+                ? `<button class="order-btn" onclick="cancelOrder('${order.id}')">Ləğv et</button>`
                 : ""
             }
             <button class="order-btn primary" onclick="trackOrder('${
@@ -855,27 +892,61 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Global functions for order actions
-  window.cancelOrder = function (orderId) {
-    if (confirm("Sifarişi ləğv etmək istədiyinizə əminsiniz?")) {
-      const orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
-      const orderIndex = orders.findIndex((order) => order.id === orderId);
+  window.cancelOrder = async function (orderId) {
+    if (!confirm("Sifarişi ləğv etmək istədiyinizə əminsiniz?")) return;
 
-      if (orderIndex !== -1) {
-        orders[orderIndex].status = "cancelled";
-        localStorage.setItem("depod_orders", JSON.stringify(orders));
-
-        showNotification("Sifariş ləğv edildi", "success");
-        loadOrders(); // Reload orders list
+    try {
+      if (window.API && typeof window.API.updateOrderStatus === "function") {
+        await window.API.updateOrderStatus(orderId, "cancelled");
+      } else {
+        // Fallback to localStorage-only if API helper not available
+        const orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+        const idx = orders.findIndex((o) => String(o.id) === String(orderId));
+        if (idx !== -1) {
+          orders[idx].status = "cancelled";
+          localStorage.setItem("depod_orders", JSON.stringify(orders));
+        }
       }
+      showNotification("Sifariş ləğv edildi", "success");
+      await loadOrders();
+    } catch (e) {
+      console.error("Cancel order failed:", e);
+      showNotification("Sifarişi ləğv etmək mümkün olmadı", "error");
     }
   };
 
-  window.trackOrder = function (orderId) {
-    const orders = JSON.parse(localStorage.getItem("depod_orders") || "[]");
-    const order = orders.find((o) => o.id === orderId);
-
+  window.trackOrder = async function (orderId) {
+    // Try in-memory list first
+    let order = (currentOrders || []).find(
+      (o) => String(o.id) === String(orderId)
+    );
+    if (!order) {
+      // Try API helper
+      try {
+        if (window.API && typeof window.API.getOrder === "function") {
+          const o = await window.API.getOrder(orderId);
+          const item = o.items?.[0] || {};
+          order = {
+            id: o.id,
+            status: o.status,
+            createdAt: o.created_at || new Date().toISOString(),
+            estimatedDelivery:
+              o.estimated_delivery ||
+              new Date(Date.now() + 3 * 86400000).toISOString(),
+            productName: item.name || "Məhsul",
+            productImage: item.image || "",
+            quantity: Number(item.quantity) || 1,
+            unitPrice: Number(item.unit_price) || 0,
+            totalPrice: Number(o.total_price) || 0,
+          };
+        }
+      } catch (e) {
+        // Fallback to localStorage
+        const ls = JSON.parse(localStorage.getItem("depod_orders") || "[]");
+        order = ls.find((o) => String(o.id) === String(orderId));
+      }
+    }
     if (order) {
-      // Show detailed tracking info
       showOrderTracking(order);
     }
   };

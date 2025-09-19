@@ -41,7 +41,6 @@ class RegisterSerializer(serializers.Serializer):
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
-        user.username = None
         user.save()
         return user
 
@@ -71,7 +70,7 @@ class LoginSerializer(serializers.Serializer):
             if user and not user.check_password(password):
                 user = None
         if user is None:
-            raise serializers.ValidationError({'message': 'Invalid credentials'})
+            raise serializers.ValidationError({'message': 'İstifadəçi adı və ya parol yanlışdır!'})
         attrs['user'] = user
         return attrs
 
@@ -88,6 +87,8 @@ class ChangePasswordSerializer(serializers.Serializer):
         user: User = self.context['request'].user
         if not user.check_password(attrs['current_password']):
             raise serializers.ValidationError({'current_password': ['Incorrect current password']})
+        if attrs['current_password'] == attrs['new_password']:
+            raise serializers.ValidationError({'new_password': ['New password must be different from current password']})
         return attrs
 
 

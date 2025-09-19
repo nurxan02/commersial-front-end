@@ -29,7 +29,13 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            return Response({'message': 'Registered'}, status=status.HTTP_201_CREATED)
+            # Issue JWT similar to login for consistency
+            token = AccessToken.for_user(user)
+            return Response({
+                'message': 'Registered',
+                'access_token': str(token),
+                'user': UserSerializer(user).data,
+            }, status=status.HTTP_201_CREATED)
         return Response({'message': 'Validation error', 'errors': serializer.errors}, status=400)
 
 
@@ -48,7 +54,7 @@ class LoginView(APIView):
                 'user': UserSerializer(user).data,
             }
             return Response(data)
-        return Response({'message': 'Invalid credentials'}, status=400)
+        return Response({'message': 'İstifadəçi adı və ya parol yanlışdır!'}, status=400)
 
 
 class ProfileView(APIView):

@@ -340,8 +340,6 @@ function populateProductData(product) {
         <span>/</span>
         <a href="products.html">Məhsullar</a>
         <span>/</span>
-        <a href="products.html?category=${categoryKeyForLink}">${categoryName}</a>
-        <span>/</span>
         <span class="active">${product.name}</span>
     `;
 

@@ -1,9 +1,10 @@
 // Register page functionality
 document.addEventListener("DOMContentLoaded", function () {
-  // API Base configuration
-  const API_BASE =
-    window.DEPOD_API_BASE ||
-    (window.location.port === "8000" ? "" : "http://127.0.0.1:8000");
+  // API URL helper (reuse global API base from api.js)
+  const apiUrl = (p) =>
+    window.API && typeof window.API._url === "function"
+      ? window.API._url(p)
+      : p;
 
   // Form elements
   const registerForm = document.getElementById("registerForm");
@@ -322,16 +323,19 @@ document.addEventListener("DOMContentLoaded", function () {
       setLoadingState(true);
 
       try {
+        // Normalize phone to digits/plus only for API uniqueness match
+        const rawPhone = phoneInput.value.trim();
+        const cleanPhone = rawPhone.replace(/[^\d+]/g, "");
         const formData = new FormData();
         formData.append("first_name", firstNameInput.value.trim());
         formData.append("last_name", lastNameInput.value.trim());
         formData.append("email", emailInput.value.trim());
-        formData.append("phone", phoneInput.value.trim());
+        formData.append("phone", cleanPhone);
         formData.append("birth_date", birthDateInput.value);
         formData.append("password", passwordInput.value);
         formData.append("confirm_password", confirmPasswordInput.value);
 
-        const response = await fetch(`${API_BASE}/api/auth/register/`, {
+        const response = await fetch(apiUrl(`/api/auth/register/`), {
           method: "POST",
           body: formData,
           credentials: "include",
@@ -340,28 +344,63 @@ document.addEventListener("DOMContentLoaded", function () {
         const data = await response.json();
 
         if (response.ok) {
+          // Persist user and token if provided
+          if (data.user) {
+            localStorage.setItem("depod_user", JSON.stringify(data.user));
+          }
+          if (data.access_token) {
+            localStorage.setItem("depod_access_token", data.access_token);
+          }
+
           showNotification(
-            "Qeydiyyat uğurla tamamlandı! Giriş səhifəsinə yönləndirilirsiz...",
+            "Qeydiyyat uğurla tamamlandı! Yönləndirilirsiz...",
             "success"
           );
 
-          // Redirect to login page after 2 seconds
+          // Redirect to profile or login depending on token availability
           setTimeout(() => {
-            window.location.href = "login.html";
-          }, 2000);
+            if (localStorage.getItem("depod_access_token")) {
+              window.location.href = "profile.html";
+            } else {
+              window.location.href = "login.html";
+            }
+          }, 1500);
         } else {
           // Handle API errors
           if (data.errors && typeof data.errors === "object") {
-            // Show field-specific errors
-            for (const [field, messages] of Object.entries(data.errors)) {
-              const fieldElement = document.querySelector(`[name="${field}"]`);
-              if (
-                fieldElement &&
-                Array.isArray(messages) &&
-                messages.length > 0
-              ) {
-                showFieldError(fieldElement, messages[0]);
+            // Map backend snake_case keys to input camelCase names
+            const fieldMap = {
+              first_name: "firstName",
+              last_name: "lastName",
+              birth_date: "birthDate",
+              confirm_password: "confirmPassword",
+              email: "email",
+              phone: "phone",
+              password: "password",
+              non_field_errors: null,
+            };
+            let shownAny = false;
+            for (const [key, messages] of Object.entries(data.errors)) {
+              const nameKey = fieldMap[key] || key;
+              let fieldElement = null;
+              if (nameKey) {
+                fieldElement =
+                  document.querySelector(`[name="${nameKey}"]`) ||
+                  document.getElementById(nameKey);
               }
+              const msg =
+                Array.isArray(messages) && messages.length > 0
+                  ? messages[0]
+                  : String(messages);
+              if (fieldElement && msg) {
+                showFieldError(fieldElement, msg);
+                shownAny = true;
+              }
+            }
+            if (!shownAny) {
+              const fallback =
+                data.message || data.error || "Qeydiyyat zamanı xəta baş verdi";
+              showNotification(fallback);
             }
           } else {
             const errorMessage =

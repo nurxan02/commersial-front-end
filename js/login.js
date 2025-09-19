@@ -1,9 +1,10 @@
 // Login page functionality
 document.addEventListener("DOMContentLoaded", function () {
-  // API Base configuration
-  const API_BASE =
-    window.DEPOD_API_BASE ||
-    (window.location.port === "8000" ? "" : "http://127.0.0.1:8000");
+  // API URL helper (reuse global API base from api.js)
+  const apiUrl = (p) =>
+    window.API && typeof window.API._url === "function"
+      ? window.API._url(p)
+      : p;
 
   // Form elements
   const loginForm = document.getElementById("loginForm");
@@ -168,7 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
         formData.append("password", password);
         formData.append("remember_me", rememberMeCheckbox.checked);
 
-        const response = await fetch(`${API_BASE}/api/auth/login/`, {
+        const response = await fetch(apiUrl(`/api/auth/login/`), {
           method: "POST",
           body: formData,
           credentials: "include",
