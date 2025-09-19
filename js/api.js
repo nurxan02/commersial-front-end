@@ -59,11 +59,56 @@
     return `${API_BASE}${normalized}`;
   }
 
+  // --- CSRF helpers ---
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  }
+
+  async function ensureCsrfToken() {
+    let token = getCookie("csrftoken");
+    if (token) return token;
+    // Try to obtain CSRF cookie from backend endpoints that should set it
+    const candidates = ["/api/auth/csrf/", "/api/csrf/", "/api/", "/"];
+    for (const path of candidates) {
+      try {
+        await fetch(apiUrl(path), {
+          method: "GET",
+          credentials: "include",
+          headers: { Accept: "application/json, text/html;q=0.9" },
+        });
+        token = getCookie("csrftoken");
+        if (token) return token;
+      } catch (_) {
+        // continue trying next candidate
+      }
+    }
+    return null;
+  }
+
+  function needsCsrf(method) {
+    const m = (method || "GET").toUpperCase();
+    return m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE";
+  }
+
+  async function withCsrfHeaders(options) {
+    const opts = { ...(options || {}) };
+    if (needsCsrf(opts.method)) {
+      const token = await ensureCsrfToken();
+      if (!opts.headers) opts.headers = {};
+      if (token) opts.headers["X-CSRFToken"] = token;
+    }
+    return opts;
+  }
+
   async function fetchJson(url, opts = {}) {
-    const res = await fetch(url, {
-      headers: { Accept: "application/json" },
+    const finalOpts = await withCsrfHeaders({
+      headers: { Accept: "application/json", ...(opts.headers || {}) },
       ...opts,
     });
+    const res = await fetch(url, finalOpts);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   }
@@ -110,15 +155,18 @@
   // E-commerce API functions
   async function createOrder(orderData) {
     const token = localStorage.getItem("depod_access_token");
-    const resp = await fetch(apiUrl("/api/orders/"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
-      credentials: "include",
-      body: JSON.stringify(orderData),
-    });
+    const resp = await fetch(
+      apiUrl("/api/orders/"),
+      await withCsrfHeaders({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+        body: JSON.stringify(orderData),
+      })
+    );
 
     if (!resp.ok) {
       throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
@@ -144,15 +192,18 @@
 
   async function updateOrderStatus(orderId, status) {
     const token = localStorage.getItem("depod_access_token");
-    const resp = await fetch(apiUrl(`/api/orders/${orderId}/`), {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
-      credentials: "include",
-      body: JSON.stringify({ status }),
-    });
+    const resp = await fetch(
+      apiUrl(`/api/orders/${orderId}/`),
+      await withCsrfHeaders({
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      })
+    );
 
     if (!resp.ok) {
       throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
@@ -258,6 +309,7 @@
 
   window.API = {
     setBase,
+    getCsrfToken: ensureCsrfToken,
     listProducts,
     getProduct,
     listCategories,

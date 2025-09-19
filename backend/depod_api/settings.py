@@ -142,8 +142,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # DRF
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',  # allow admin session auth
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    # API uses only JWT authentication; admin panel still uses Django sessions (not DRF)
+    'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 12,
@@ -164,7 +164,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.getenv('CORS_ALLOWED_ORIGINS', 'http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:8000').split(',') if o.strip()
 ]
-CORS_ALLOW_HEADERS = list(os.getenv('CORS_ALLOW_HEADERS', 'authorization,content-type,accept,x-requested-with').split(','))
+CORS_ALLOW_HEADERS = list(os.getenv('CORS_ALLOW_HEADERS', 'authorization,content-type,accept,x-requested-with,x-csrftoken').split(','))
+
+# CSRF trusted origins (must include scheme)
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:8000').split(',') if o.strip()
+]
 
 # Static assets cache busting for admin logos/icons
 # If env var not provided, default to server start timestamp to force refresh

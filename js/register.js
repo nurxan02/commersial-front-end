@@ -335,10 +335,18 @@ document.addEventListener("DOMContentLoaded", function () {
         formData.append("password", passwordInput.value);
         formData.append("confirm_password", confirmPasswordInput.value);
 
+        // Ensure CSRF cookie/header for Django
+        let csrfToken = null;
+        if (window.API && typeof window.API.getCsrfToken === "function") {
+          csrfToken = await window.API.getCsrfToken();
+        }
+        const headers = csrfToken ? { "X-CSRFToken": csrfToken } : {};
+
         const response = await fetch(apiUrl(`/api/auth/register/`), {
           method: "POST",
           body: formData,
           credentials: "include",
+          headers,
         });
 
         const data = await response.json();

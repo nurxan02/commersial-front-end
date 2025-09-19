@@ -70,7 +70,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             unit_price=unit_price,
             subtotal=subtotal,
         )
-
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, *args, **kwargs):
