@@ -14,6 +14,12 @@ class FooterSerializer(serializers.ModelSerializer):
         fields = ['footer_description', 'footer_email', 'footer_phone', 'footer_bottom_text']
 
 
+class HomeSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SiteSettings
+        fields = ['home_hero_title', 'home_hero_subtitle']
+
+
 class AboutSerializer(serializers.ModelSerializer):
     class Meta:
         model = AboutContent

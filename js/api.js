@@ -244,6 +244,18 @@
     return resp.json();
   }
 
+  // Home settings (hero texts)
+  async function getHomeSettings() {
+    const resp = await fetch(apiUrl(`/api/settings/home/`), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    // expected: { home_hero_title: string, home_hero_subtitle: string }
+    return resp.json();
+  }
+
   window.API = {
     setBase,
     listProducts,
@@ -258,6 +270,7 @@
     getStudentQr,
     getSocialLinks,
     getLegalDocs,
+    getHomeSettings,
     _url: apiUrl,
   };
 })();

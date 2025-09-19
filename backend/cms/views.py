@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
 from .models import SiteSettings, AboutContent, ContactContent, ContactMessage
-from .serializers import SocialLinksSerializer, FooterSerializer, AboutSerializer, ContactSerializer, ContactMessageSerializer
+from .serializers import SocialLinksSerializer, FooterSerializer, AboutSerializer, ContactSerializer, ContactMessageSerializer, HomeSettingsSerializer
 
 
 class SocialLinksView(APIView):
@@ -44,6 +44,16 @@ class FooterView(APIView):
             'phone': data['footer_phone'],
             'bottom_text': data['footer_bottom_text'],
         })
+
+
+class HomeSettingsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        obj = SiteSettings.objects.first()
+        if not obj:
+            return Response({'home_hero_title': '', 'home_hero_subtitle': ''})
+        return Response(HomeSettingsSerializer(obj).data)
 
 
 class AboutView(APIView):

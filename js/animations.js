@@ -1,11 +1,37 @@
-document.addEventListener("DOMContentLoaded", function () {
-  // Typewriter animation
-  const text = "Müasir Texnologiyanı Depod ilə əldə et";
-  const el = document.getElementById("typewriter-title");
+document.addEventListener("DOMContentLoaded", async function () {
+  // Typewriter animation (API-driven if available)
+  const defaultTitle = "Müasir Texnologiyanı Depod ilə əldə et";
+  const titleEl = document.getElementById("typewriter-title");
+  const subtitleEl = document.querySelector(".hero-subtitle");
+
+  async function loadHeroTexts() {
+    try {
+      if (window.API && typeof window.API.getHomeSettings === "function") {
+        const hs = await window.API.getHomeSettings();
+        return {
+          title: (hs && hs.home_hero_title) || "",
+          subtitle: (hs && hs.home_hero_subtitle) || "",
+        };
+      }
+    } catch (_) {}
+    return { title: "", subtitle: "" };
+  }
+
+  let { title, subtitle } = await loadHeroTexts();
+  const text = (title && title.trim()) || defaultTitle;
+
+  // Clear existing content before typing
+  if (titleEl) titleEl.textContent = "";
+  // Update subtitle immediately if provided
+  if (subtitleEl && subtitle && subtitle.trim()) {
+    subtitleEl.textContent = subtitle.trim();
+  }
+
   let i = 0;
   function typeWriter() {
+    if (!titleEl) return;
     if (i < text.length) {
-      el.textContent += text.charAt(i);
+      titleEl.textContent += text.charAt(i);
       i++;
       setTimeout(typeWriter, 60);
     }

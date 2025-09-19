@@ -1,12 +1,12 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import SiteSettings, AboutContent, ContactContent, ContactMessage
-from .forms import AboutAdminForm
+from .forms import AboutAdminForm, ContactAdminForm
 
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(ModelAdmin):
-    list_display = ("id", "instagram", "tiktok", "facebook", "footer_email", "footer_phone")
+    list_display = ("id", "home_hero_title", "instagram", "tiktok", "facebook", "footer_email", "footer_phone")
 
 
 @admin.register(AboutContent)
@@ -18,6 +18,7 @@ class AboutContentAdmin(ModelAdmin):
 
 @admin.register(ContactContent)
 class ContactContentAdmin(ModelAdmin):
+    form = ContactAdminForm
     list_display = ("id", "hero_title", "email_primary", "phone_primary")
     search_fields = ("hero_title",)
 
