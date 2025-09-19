@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
+import uuid
 
 
 class User(AbstractUser):
@@ -25,3 +27,21 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class StudentPromoCode(models.Model):
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='student_codes')
+    code = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    scanned_at = models.DateTimeField(null=True, blank=True)
+    is_valid = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def mark_scanned(self):
+        self.scanned_at = timezone.now()
+        self.save(update_fields=['scanned_at'])
+
+    def __str__(self):
+        return f"{self.code} — {self.user.email}"

@@ -475,7 +475,7 @@ document.addEventListener("DOMContentLoaded", function () {
       formData.append("student_document", file);
 
       const response = await fetch(
-        `${API_BASE}/api/auth/upload-student-document/`,
+        apiUrl(`/api/auth/upload-student-document/`),
         {
           method: "POST",
           headers: {
@@ -538,27 +538,39 @@ document.addEventListener("DOMContentLoaded", function () {
       case "approved":
         if (documentApproved) {
           documentApproved.style.display = "block";
-          // Attempt to load QR code dynamically if supported by backend
           try {
             if (window.API && typeof window.API.getStudentQr === "function") {
+              const container =
+                documentApproved.querySelector(".qr-container") ||
+                documentApproved;
+              // If already loaded once, skip to avoid duplicates
+              if (container.getAttribute("data-qr-loaded") === "1") {
+                break;
+              }
               window.API.getStudentQr()
                 .then((qr) => {
-                  const container =
-                    documentApproved.querySelector(".qr-container") ||
-                    documentApproved;
+                  // Clear any previous QR content to avoid duplication
+                  Array.from(
+                    container.querySelectorAll('[data-qr="student"]')
+                  ).forEach((el) => el.remove());
                   if (qr?.qr_image_url) {
                     const img = new Image();
                     img.src = qr.qr_image_url;
                     img.alt = "Tələbə endirimi QR";
                     img.style.maxWidth = "180px";
+                    img.setAttribute("data-qr", "student");
                     container.appendChild(img);
                   } else if (qr?.qr_svg && typeof qr.qr_svg === "string") {
-                    container.insertAdjacentHTML("beforeend", qr.qr_svg);
+                    const wrapper = document.createElement("div");
+                    wrapper.setAttribute("data-qr", "student");
+                    wrapper.innerHTML = qr.qr_svg;
+                    container.appendChild(wrapper);
                   }
+                  container.setAttribute("data-qr-loaded", "1");
                 })
                 .catch(() => {});
             }
-          } catch (_) {}
+          } catch (e) {}
         }
         break;
       case "rejected":

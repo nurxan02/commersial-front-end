@@ -18,6 +18,13 @@ class Order(models.Model):
     estimated_delivery = models.DateTimeField()
     pricing_snapshot = models.JSONField(null=True, blank=True)
 
+    def __str__(self):
+        try:
+            user_label = getattr(self.user, 'email', str(self.user))
+        except Exception:
+            user_label = str(self.user_id)
+        return f"Order #{self.id} — {user_label}"
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
@@ -27,3 +34,8 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        # Prefer stored name so it remains accurate even if product is renamed later
+        base = self.name or (self.product.name if self.product_id else f"Item #{self.id}")
+        return f"{base} × {self.quantity}"

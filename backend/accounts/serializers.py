@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.db.models import Q
 from .models import User
+from .models import StudentPromoCode
 from datetime import date
 
 
@@ -101,3 +102,34 @@ class UploadStudentDocumentSerializer(serializers.Serializer):
         if f.content_type not in ['application/pdf', 'image/jpeg', 'image/png']:
             raise serializers.ValidationError('Unsupported file type')
         return f
+
+
+class StudentPromoCodeSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+
+    class Meta:
+        model = StudentPromoCode
+        fields = ['id', 'code', 'user_id', 'user_email', 'created_at', 'scanned_at', 'is_valid']
+
+
+class CreateStudentPromoCodeSerializer(serializers.Serializer):
+    def create(self, validated_data):
+        user = self.context['request'].user
+        if user.student_status != 'approved':
+            raise serializers.ValidationError({'message': 'User not approved for student discount'})
+        code = StudentPromoCode.objects.create(user=user)
+        return code
+
+
+class VerifyStudentPromoCodeSerializer(serializers.Serializer):
+    code = serializers.UUIDField()
+
+    def validate(self, attrs):
+        code = attrs['code']
+        try:
+            promo = StudentPromoCode.objects.get(code=code)
+        except StudentPromoCode.DoesNotExist:
+            raise serializers.ValidationError({'code': ['Code not found']})
+        attrs['promo'] = promo
+        return attrs

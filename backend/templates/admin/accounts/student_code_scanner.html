@@ -1,0 +1,316 @@
+{% extends "admin/base_site.html" %} {% load static %} {% load i18n %} {% block content %}
+<style>
+  .scanner-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  @media (min-width: 960px) {
+    .scanner-wrap {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .input {
+    flex: 1;
+    min-width: 260px;
+    height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+  }
+  .btn {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--unfold-color-primary-500, #0ea5e9);
+    color: #fff;
+  }
+  .btn-copy {
+    background: #f3f4f6;
+  }
+  .hint {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .status {
+    margin-top: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .status.ok {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  .status.err {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  .result-card {
+    margin-top: 12px;
+    background: #0b10201a;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+  }
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+  }
+  .result-body {
+    padding: 8px 12px;
+  }
+  .result-body pre {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow: auto;
+  }
+  video.scanner-video {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #000;
+  }
+  .page-head {
+    margin-bottom: 8px;
+  }
+  .page-sub {
+    color: #6b7280;
+    margin-top: 0;
+  }
+</style>
+<script>
+  // Ensure a trustworthy origin for camera APIs: redirect 0.0.0.0 to localhost
+  (function () {
+    try {
+      if (location.hostname === "0.0.0.0") {
+        const port = location.port ? ":" + location.port : "";
+        const url =
+          "http://localhost" +
+          port +
+          location.pathname +
+          location.search +
+          location.hash;
+        location.replace(url);
+      }
+    } catch (e) {}
+  })();
+</script>
+<h1 class="page-head">{% translate "Student Code Scanner" %}</h1>
+<p class="page-sub">
+  Scan a QR code with the camera or paste a code manually to verify.
+</p>
+
+<div id="scanner" class="scanner-wrap">
+  <section class="card">
+    <h3>{% translate "Camera" %}</h3>
+    <video id="video" class="scanner-video" autoplay playsinline></video>
+    <p class="hint" id="cameraHint"></p>
+  </section>
+  <section class="card">
+    <h3>{% translate "Manual code" %}</h3>
+    <div class="row">
+      <input id="manualCode" class="input" type="text" placeholder="UUID..." />
+      <button id="verifyBtn" class="btn btn-primary">
+        {% translate "Verify" %}
+      </button>
+    </div>
+    <div id="status" class="status" hidden></div>
+    <div id="resultCard" class="result-card" hidden>
+      <div class="result-head">
+        <strong>{% translate "Result" %}</strong>
+        <button
+          id="copyBtn"
+          class="btn btn-copy"
+          type="button"
+          data-text-copy="{% translate 'Copy' %}"
+          data-text-copied="{% translate 'Copied' %}"
+        >
+          {% translate "Copy" %}
+        </button>
+      </div>
+      <div class="result-body">
+        <pre id="result"></pre>
+      </div>
+    </div>
+  </section>
+</div>
+<script>
+  (async function () {
+    const video = document.getElementById("video");
+    const resultEl = document.getElementById("result");
+    const manual = document.getElementById("manualCode");
+    const verifyBtn = document.getElementById("verifyBtn");
+    const statusEl = document.getElementById("status");
+    const resultCard = document.getElementById("resultCard");
+    const copyBtn = document.getElementById("copyBtn");
+    const cameraHint = document.getElementById("cameraHint");
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+    }
+
+    async function verify(code) {
+      statusEl.hidden = false;
+      resultCard.hidden = true;
+      statusEl.className = "status";
+      statusEl.textContent = "Verifying...";
+      try {
+        const csrf = getCookie("csrftoken");
+        const resp = await fetch("/api/auth/student-codes/verify/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrf },
+          credentials: "include",
+          body: JSON.stringify({ code }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          statusEl.classList.add("ok");
+          statusEl.textContent = "Valid code";
+          resultEl.textContent = JSON.stringify(data, null, 2);
+          resultCard.hidden = false;
+        } else {
+          statusEl.classList.add("err");
+          statusEl.textContent = data.message || data.error || "Invalid code";
+        }
+      } catch (e) {
+        statusEl.classList.add("err");
+        statusEl.textContent = "Network error";
+      }
+    }
+
+    verifyBtn.addEventListener("click", () => {
+      const code = manual.value.trim();
+      if (code) verify(code);
+    });
+    copyBtn?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(resultEl.textContent || "");
+        const txtCopied = copyBtn.dataset.textCopied || "Copied";
+        const txtCopy = copyBtn.dataset.textCopy || "Copy";
+        copyBtn.textContent = txtCopied;
+        setTimeout(() => (copyBtn.textContent = txtCopy), 1200);
+      } catch (e) {}
+    });
+
+    // Try camera + BarcodeDetector
+    try {
+      if ("BarcodeDetector" in window) {
+        const detector = new BarcodeDetector({ formats: ["qr_code"] });
+        // On Safari/Chrome, camera requires a secure or localhost origin
+        if (
+          location.protocol !== "https:" &&
+          location.hostname !== "localhost"
+        ) {
+          cameraHint.textContent =
+            "Camera requires HTTPS or localhost. Try using http://localhost:" +
+            (location.port || "8000");
+        }
+        async function getBackCameraStream() {
+          // 1) Best: exact environment
+          try {
+            return await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { exact: "environment" } },
+              audio: false,
+            });
+          } catch (e) {}
+          // 2) Ideal environment
+          try {
+            return await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: "environment" },
+              audio: false,
+            });
+          } catch (e) {}
+          // 3) Enumerate devices and pick a likely rear camera
+          let probe;
+          try {
+            // Prompt permission so labels are populated
+            probe = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false,
+            });
+          } catch (e) {
+            // If permission denied or no camera, rethrow
+            throw e;
+          }
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videos = devices.filter((d) => d.kind === "videoinput");
+          // Heuristic: look for label hints
+          let target = videos.find((d) =>
+            /back|rear|environment/i.test(d.label)
+          );
+          if (!target) {
+            // Mobile usually has two; pick the last (often rear)
+            target = videos[videos.length - 1] || videos[0];
+          }
+          if (probe) probe.getTracks().forEach((t) => t.stop());
+          if (!target) throw new Error("No camera available");
+          return await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: target.deviceId } },
+            audio: false,
+          });
+        }
+        const stream = await getBackCameraStream();
+        video.srcObject = stream;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        async function scan() {
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            try {
+              const barcodes = await detector.detect(canvas);
+              if (barcodes.length > 0) {
+                const raw = barcodes[0].rawValue || barcodes[0].rawValue || "";
+                let code = raw.trim();
+                // Accept UUID directly or payloads like DEPOD-STUDENT:...:uuid
+                const match = code.match(/[0-9a-fA-F-]{36}/);
+                if (match) {
+                  code = match[0];
+                  await verify(code);
+                }
+              }
+            } catch {}
+          }
+          requestAnimationFrame(scan);
+        }
+        scan();
+      } else {
+        cameraHint.textContent =
+          "BarcodeDetector not supported in this browser. Use manual input.";
+      }
+    } catch (e) {
+      cameraHint.textContent = "Camera access failed. Use manual input.";
+    }
+  })();
+</script>
+{% endblock content %}

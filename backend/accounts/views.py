@@ -17,8 +17,11 @@ from .serializers import (
     UpdatePhoneSerializer,
     ChangePasswordSerializer,
     UploadStudentDocumentSerializer,
+    StudentPromoCodeSerializer,
+    CreateStudentPromoCodeSerializer,
+    VerifyStudentPromoCodeSerializer,
 )
-from .models import User
+from .models import User, StudentPromoCode
 
 
 class RegisterView(APIView):
@@ -111,8 +114,12 @@ class StudentQrView(APIView):
         user: User = request.user
         if user.student_status != 'approved':
             return Response({'message': 'Not approved'}, status=403)
-        # Generate a simple QR payload
-        payload = f"DEPOD-STUDENT:{user.id}:{user.email}"
+        # Ensure a valid (latest) promo code exists for user
+        code = StudentPromoCode.objects.filter(user=user, is_valid=True).first()
+        if not code:
+            code = StudentPromoCode.objects.create(user=user)
+        # Generate a QR payload containing the UUID code
+        payload = f"DEPOD-STUDENT:{user.id}:{user.email}:{code.code}"
         img = qrcode.make(payload)
         buf = io.BytesIO()
         img.save(buf, format='PNG')
@@ -133,3 +140,38 @@ class StudentDiscountView(APIView):
             'is_student': is_student,
             'status': user.student_status,
         })
+
+
+class StudentPromoCodeListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Admins can see all; users see only their codes
+        qs = StudentPromoCode.objects.all() if request.user.is_staff else StudentPromoCode.objects.filter(user=request.user)
+        return Response(StudentPromoCodeSerializer(qs, many=True).data)
+
+    def post(self, request):
+        ser = CreateStudentPromoCodeSerializer(data=request.data, context={'request': request})
+        if ser.is_valid():
+            code = ser.save()
+            return Response(StudentPromoCodeSerializer(code).data, status=status.HTTP_201_CREATED)
+        return Response({'message': 'Validation error', 'errors': ser.errors}, status=400)
+
+
+class StudentPromoCodeVerifyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Only admin/staff should verify codes
+        if not request.user.is_staff:
+            return Response({'message': 'Forbidden'}, status=403)
+        ser = VerifyStudentPromoCodeSerializer(data=request.data)
+        if ser.is_valid():
+            promo: StudentPromoCode = ser.validated_data['promo']
+            # Mark scanned and optionally invalidate for one-time use
+            if promo.is_valid:
+                promo.mark_scanned()
+                promo.is_valid = False
+                promo.save(update_fields=['is_valid'])
+            return Response(StudentPromoCodeSerializer(promo).data)
+        return Response({'message': 'Validation error', 'errors': ser.errors}, status=400)

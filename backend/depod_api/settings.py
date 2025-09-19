@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -45,6 +46,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -57,7 +59,7 @@ ROOT_URLCONF = 'depod_api.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+    'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -108,10 +110,26 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# Languages available in admin (will be shown in Unfold switcher)
+LANGUAGES = (
+    ('az', _('Azerbaijani')),
+    ('en', _('English')),
+    ('ru', _('Russian')),
+    ('tr', _('Turkish')),
+    ('fr', _('French')),
+)
+
+# Optional: place project-specific .po/.mo files here if you customize strings
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
-    # Expose existing repo assets (logo, favicons) to Django static
+    # Project-level static path for brand assets and others
+    (BASE_DIR / 'static'),
+    # Expose existing repo assets if still needed elsewhere
     (BASE_DIR.parent / 'favicon'),
     (BASE_DIR.parent / 'image'),
 ]
@@ -124,6 +142,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # DRF
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',  # allow admin session auth
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -147,32 +166,40 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_HEADERS = list(os.getenv('CORS_ALLOW_HEADERS', 'authorization,content-type,accept,x-requested-with').split(','))
 
+# Static assets cache busting for admin logos/icons
+# If env var not provided, default to server start timestamp to force refresh
+STATIC_ASSETS_VERSION = os.getenv('STATIC_ASSETS_VERSION', str(int(time.time())))
+
 # Unfold admin configuration: branding, colors, icons, and assets
 UNFOLD = {
     # Titles and branding texts
     "SITE_TITLE": "Depod Admin",
     "SITE_HEADER": "Depod",
     "SITE_SUBHEADER": "E-ticarət idarə paneli",
+    # Show language selector in top-right
+    "SHOW_LANGUAGES": True,
 
-    # Clickable logo target
-    "SITE_URL": "/admin/",
+    # Clickable logo target and "View site" link
+    "SITE_URL": "https://depod.az",
 
     # Logo and icon (light/dark use same asset for now)
+    # Icon used by header/sidebar (favicon-style)
     "SITE_ICON": {
-        "light": lambda request: static("favicon.svg"),
-        "dark": lambda request: static("favicon.svg"),
+        "light": lambda request: f"{static('brand/favicon.svg')}?v={STATIC_ASSETS_VERSION}",
+        "dark": lambda request: f"{static('brand/favicon.svg')}?v={STATIC_ASSETS_VERSION}",
     },
     "SITE_LOGO": {
-        "light": lambda request: static("logo.png"),  # provided from image/logo.png via STATICFILES_DIRS
-        "dark": lambda request: static("logo.png"),
+    # Provided from backend/static/brand/logo.png
+    "light": lambda request: f"{static('brand/logo.png')}?v={STATIC_ASSETS_VERSION}",
+    "dark": lambda request: f"{static('brand/logo.png')}?v={STATIC_ASSETS_VERSION}",
     },
 
     # Favicon set (re-use existing repo favicons)
     "SITE_FAVICONS": [
-        {"rel": "icon", "type": "image/svg+xml", "href": lambda request: static("favicon.svg")},
-        {"rel": "icon", "sizes": "96x96", "type": "image/png", "href": lambda request: static("favicon-96x96.png")},
-        {"rel": "apple-touch-icon", "sizes": "180x180", "href": lambda request: static("apple-touch-icon.png")},
-        {"rel": "manifest", "href": lambda request: static("site.webmanifest")},
+    {"rel": "icon", "type": "image/svg+xml", "href": lambda request: f"{static('brand/favicon.svg')}?v={STATIC_ASSETS_VERSION}"},
+    {"rel": "icon", "sizes": "96x96", "type": "image/png", "href": lambda request: f"{static('brand/favicon-96x96.png')}?v={STATIC_ASSETS_VERSION}"},
+    {"rel": "apple-touch-icon", "sizes": "180x180", "href": lambda request: f"{static('brand/apple-touch-icon.png')}?v={STATIC_ASSETS_VERSION}"},
+    {"rel": "manifest", "href": lambda request: f"{static('brand/site.webmanifest')}?v={STATIC_ASSETS_VERSION}"},
     ],
 
     # Do not force THEME; leaving it unset enables the light/dark switcher.
@@ -255,6 +282,7 @@ UNFOLD = {
                 "items": [
                     {"title": _("İstifadəçilər"), "icon": "person", "link": reverse_lazy("admin:accounts_user_changelist")},
                     {"title": _("Qruplar"), "icon": "groups", "link": reverse_lazy("admin:auth_group_changelist")},
+                    {"title": _("Tələbə endirim kodları"), "icon": "qr_code", "link": reverse_lazy("admin:accounts_studentpromocode_changelist")},
                 ],
             },
         ],

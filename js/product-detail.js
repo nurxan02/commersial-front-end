@@ -876,6 +876,25 @@ function closeNotification(closeBtn) {
 
 // Get category display name (reusing from products.js)
 function getCategoryName(category) {
+  // If object with name (defensive), prefer it
+  if (category && typeof category === "object") {
+    if (category.name) return category.name;
+    if (
+      category.key &&
+      window.CATEGORY_NAME_MAP &&
+      window.CATEGORY_NAME_MAP[category.key]
+    ) {
+      return window.CATEGORY_NAME_MAP[category.key];
+    }
+  }
+
+  // Prefer dynamic map loaded from API (covers new categories without code changes)
+  if (window.CATEGORY_NAME_MAP && typeof category === "string") {
+    const name = window.CATEGORY_NAME_MAP[category];
+    if (name) return name;
+  }
+
+  // Fallback to static mapping for known defaults
   const categoryNames = {
     earphone: "Qulaqlıqlar",
     powerbank: "Powerbank",

@@ -286,6 +286,21 @@ function safeFixed(n, digits = 2) {
   return isNum(n) ? n.toFixed(digits) : "—";
 }
 
+// Normalize category key aliases coming from URLs or legacy links
+function normalizeCategoryKey(key) {
+  if (!key) return key;
+  const k = String(key).toLowerCase();
+  const aliases = {
+    adapter: "charger",
+    adapters: "charger",
+    chargers: "charger",
+    battery: "powerbank",
+    batteries: "powerbank",
+    "battery-pack": "powerbank",
+  };
+  return aliases[k] || k;
+}
+
 // Map API product to frontend shape
 function mapApiProduct(p) {
   const priceRaw = p.price ?? p.pricing?.price ?? null;
@@ -460,18 +475,14 @@ async function getAllProducts() {
 
 // Get products by category
 async function getProductsByCategory(category) {
-  if (category === "all") return getAllProducts();
+  const key = normalizeCategoryKey(category);
+  if (key === "all") return getAllProducts();
   try {
-    const list = await window.API.listProducts(category);
-    const mapped = list.map(mapApiProduct);
-    // Fallback UX: if selected category is empty, show all products
-    if (!Array.isArray(mapped) || mapped.length === 0) {
-      return getAllProducts();
-    }
-    return mapped;
+    const list = await window.API.listProducts(key);
+    return list.map(mapApiProduct);
   } catch (e) {
     return Object.values(PRODUCTS).filter(
-      (product) => product.category === category
+      (product) => normalizeCategoryKey(product.category) === key
     );
   }
 }
@@ -501,6 +512,15 @@ async function getProductById(id) {
 function renderProducts(products) {
   const grid = document.getElementById("productsGrid");
   if (!grid) return;
+
+  if (!Array.isArray(products) || products.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="padding:24px;text-align:center;color:#6b7280;background:#fff;border:1px solid #e5e7eb;border-radius:12px;">
+        <p>Bu kateqoriya üzrə məhsul tapılmadı.</p>
+      </div>
+    `;
+    return;
+  }
 
   grid.innerHTML = products
     .map(
@@ -579,7 +599,7 @@ document.addEventListener("DOMContentLoaded", function () {
 async function initProductsPage() {
   // Get category from URL parameter
   const urlParams = new URLSearchParams(window.location.search);
-  const category = urlParams.get("category") || "all";
+  const category = normalizeCategoryKey(urlParams.get("category") || "all");
 
   // Render dynamic filters from API categories (fallback to static map)
   await renderFilters(category);
@@ -594,6 +614,7 @@ async function initProductsPage() {
 async function renderFilters(activeKey) {
   const container = document.querySelector(".filter-tabs");
   if (!container) return;
+  const active = normalizeCategoryKey(activeKey);
 
   // Fetch categories from API
   let categories = [];
@@ -616,12 +637,12 @@ async function renderFilters(activeKey) {
   // Build buttons: All + categories
   const html = [
     `<button class="filter-btn ${
-      activeKey === "all" ? "active" : ""
+      active === "all" ? "active" : ""
     }" data-category="all">Hamısı</button>`,
     ...categories.map(
       (c) => `
       <button class="filter-btn ${
-        activeKey === c.key ? "active" : ""
+        active === c.key ? "active" : ""
       }" data-category="${c.key}">
         ${c.name}
       </button>
@@ -635,7 +656,9 @@ async function renderFilters(activeKey) {
   const filterBtns = container.querySelectorAll(".filter-btn");
   filterBtns.forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const selectedCategory = btn.getAttribute("data-category");
+      const selectedCategory = normalizeCategoryKey(
+        btn.getAttribute("data-category")
+      );
 
       // Update active states
       filterBtns.forEach((b) => b.classList.remove("active"));

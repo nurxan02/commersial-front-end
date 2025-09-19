@@ -4379,7 +4379,7 @@ html {
 }
 
 .student-discount-badge::before {
-  content: "🎓";
+  content: "";
   margin-right: 3px;
 }
 
@@ -4451,7 +4451,7 @@ html {
 }
 
 .student-discount-badge::before {
-  content: "🎓";
+  content: "";
   margin-right: 3px;
 }
 

@@ -1,0 +1,28 @@
+{% extends "admin/change_list.html" %} {% load i18n %} {% block object-tools-items %} {{ block.super }}
+<li style="list-style: none">
+  <a
+    id="openScannerFab"
+    href="{% url 'admin:student_code_scanner' %}"
+    title="{% trans 'Open Scanner' %}"
+    aria-label="{% trans 'Open Scanner' %}"
+    style="
+      position: fixed;
+      bottom: 80px;
+      right: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 9999px;
+      text-decoration: none;
+      background: var(--unfold-color-primary-500, #0ea5e9);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08);
+      z-index: 99999999999999999;
+    "
+  >
+    QR
+  </a>
+</li>
+{% endblock object-tools-items %}

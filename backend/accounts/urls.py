@@ -7,7 +7,9 @@ from .views import (
     ChangePasswordView,
     UploadStudentDocumentView,
     StudentQrView,
-    StudentDiscountView
+    StudentDiscountView,
+    StudentPromoCodeListCreateView,
+    StudentPromoCodeVerifyView,
 )
 
 urlpatterns = [
@@ -19,4 +21,6 @@ urlpatterns = [
     path('upload-student-document/', UploadStudentDocumentView.as_view()),
     path('student-qr/', StudentQrView.as_view()),
     path('student-discount/', StudentDiscountView.as_view()),
+    path('student-codes/', StudentPromoCodeListCreateView.as_view()),
+    path('student-codes/verify/', StudentPromoCodeVerifyView.as_view()),
 ]
