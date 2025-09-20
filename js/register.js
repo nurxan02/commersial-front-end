@@ -35,13 +35,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (termsUrl && termsLinkEl) {
         termsLinkEl.href = termsUrl;
+        termsLinkEl.onclick = null; // Remove any existing handlers
+        console.log("Terms URL loaded:", termsUrl);
       }
       if (privacyUrl && privacyLinkEl) {
         privacyLinkEl.href = privacyUrl;
+        privacyLinkEl.onclick = null; // Remove any existing handlers
+        console.log("Privacy URL loaded:", privacyUrl);
       }
     } catch (e) {
-      // Silent fallback to existing # links
+      // Silent fallback - if API fails, links will remain as javascript:void(0)
       console.warn("Failed to load legal docs:", e);
+
+      // Add fallback click handlers for when API fails
+      if (termsLinkEl) {
+        termsLinkEl.onclick = function (e) {
+          e.preventDefault();
+          alert("İstifadə şərtləri hazırda əlçatan deyil.");
+        };
+      }
+      if (privacyLinkEl) {
+        privacyLinkEl.onclick = function (e) {
+          e.preventDefault();
+          alert("Məxfilik siyasəti hazırda əlçatan deyil.");
+        };
+      }
     }
   })();
 

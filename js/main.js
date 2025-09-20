@@ -92,16 +92,35 @@ window.addEventListener("scroll", function () {
   }
 });
 
-// Smooth scrolling for anchor links
-document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+// Smooth scrolling for anchor links (only for internal page anchors)
+document.querySelectorAll('a[href^="#"]:not([href="#"])').forEach((anchor) => {
+  // Skip links that will be updated with external URLs
+  if (anchor.id === "termsLink" || anchor.id === "privacyLink") {
+    return;
+  }
+
   anchor.addEventListener("click", function (e) {
     e.preventDefault();
-    const target = document.querySelector(this.getAttribute("href"));
-    if (target) {
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    const href = this.getAttribute("href");
+
+    // Check if href is a valid anchor link (starts with # and doesn't contain special characters)
+    if (
+      href &&
+      href.startsWith("#") &&
+      href.length > 1 &&
+      !href.includes("://")
+    ) {
+      try {
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      } catch (error) {
+        console.warn("Invalid selector for smooth scrolling:", href);
+      }
     }
   });
 });
