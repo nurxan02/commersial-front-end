@@ -19,4 +19,6 @@ urlpatterns = [
     path('', include('offers.urls')),
     # CMS endpoints
     path('', include('cms.urls')),
+    # Reviews endpoints
+    path('', include('reviews.urls')),
 ]

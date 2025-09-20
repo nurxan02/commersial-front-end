@@ -299,6 +299,9 @@ async function initProductDetailPage() {
   setupTabs();
   setupImageGallery();
   loadRelatedProducts(product.category, product.id);
+
+  // Load product reviews
+  loadReviews(productId);
 }
 
 function populateProductData(product) {
@@ -967,3 +970,512 @@ function getCategoryName(category) {
   };
   return categoryNames[category] || category;
 }
+
+// Review System Functions
+let allReviews = [];
+let currentUserReview = null;
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("az", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function createStarRating(rating, readonly = true) {
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(
+      `<span class="star ${i <= rating ? "filled" : ""}">${
+        i <= rating ? "★" : "☆"
+      }</span>`
+    );
+  }
+  return `<div class="star-rating ${readonly ? "readonly" : ""}">${stars.join(
+    ""
+  )}</div>`;
+}
+
+function createReviewHTML(review, canEdit = false) {
+  return `
+    <div class="review-item" data-review-id="${review.id}">
+      <div class="review-header">
+        <div class="reviewer-info">
+          <h4 class="reviewer-name">${review.user_name}</h4>
+          ${createStarRating(review.rating)}
+        </div>
+        <div class="review-meta">
+          <span class="review-date">${formatDate(review.created_at)}</span>
+          ${
+            canEdit
+              ? `
+            <div class="review-actions">
+              <button class="edit-review-btn" onclick="editReview(${review.id})">
+                <i class="fas fa-edit"></i> Redaktə et
+              </button>
+              <button class="delete-review-btn" onclick="deleteReview(${review.id})">
+                <i class="fas fa-trash"></i> Sil
+              </button>
+            </div>
+          `
+              : ""
+          }
+        </div>
+      </div>
+      <div class="review-content">
+        <p>${review.comment}</p>
+      </div>
+    </div>
+  `;
+}
+
+async function loadReviews(productId) {
+  try {
+    // Load reviews and stats in parallel
+    const [reviews, stats, userReview] = await Promise.all([
+      window.API.getProductReviews(productId),
+      window.API.getProductReviewStats(productId),
+      isUserLoggedIn()
+        ? window.API.getUserReview(productId).catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
+    allReviews = reviews;
+    currentUserReview = userReview;
+
+    // Display reviews summary
+    displayReviewsSummary(stats);
+
+    // Display reviews list (max 3)
+    displayReviewsList(reviews.slice(0, 3));
+
+    // Show "Show More" button if there are more than 3 reviews
+    const showMoreContainer = document.getElementById("showMoreContainer");
+    if (reviews.length > 3) {
+      showMoreContainer.style.display = "block";
+    } else {
+      showMoreContainer.style.display = "none";
+    }
+
+    // Show review form if user is eligible
+    checkReviewEligibility(productId);
+  } catch (error) {
+    console.error("Failed to load reviews:", error);
+  }
+}
+
+function displayReviewsSummary(stats) {
+  const summaryContainer = document.getElementById("reviewsSummary");
+  if (stats.total_reviews === 0) {
+    summaryContainer.innerHTML = `
+      <div class="no-reviews">
+        <p>Hələlik şərh yoxdur. İlk şərhi siz yazın!</p>
+      </div>
+    `;
+  } else {
+    summaryContainer.innerHTML = `
+      <div class="reviews-stats">
+        <div class="average-rating">
+          ${createStarRating(Math.round(stats.average_rating))}
+          <span class="rating-number">${stats.average_rating}</span>
+          <span class="total-reviews">(${stats.total_reviews} şərh)</span>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function displayReviewsList(reviews) {
+  const reviewsList = document.getElementById("reviewsList");
+  const userData = isUserLoggedIn()
+    ? JSON.parse(localStorage.getItem("depod_user"))
+    : null;
+
+  if (reviews.length === 0) {
+    reviewsList.innerHTML = "";
+    return;
+  }
+
+  reviewsList.innerHTML = reviews
+    .map((review) => {
+      const canEdit = userData && review.user_id === userData.id;
+      return createReviewHTML(review, canEdit);
+    })
+    .join("");
+}
+
+async function checkUserPurchasedAndDelivered(productId) {
+  try {
+    console.log("Checking purchase status for product:", productId);
+    // Get user's orders
+    const ordersResponse = await window.API.getOrders();
+    console.log("User orders response:", ordersResponse);
+
+    // Handle different response formats
+    let orders = [];
+    if (Array.isArray(ordersResponse)) {
+      orders = ordersResponse;
+    } else if (ordersResponse && ordersResponse.results) {
+      orders = ordersResponse.results;
+    } else if (ordersResponse && Array.isArray(ordersResponse.orders)) {
+      orders = ordersResponse.orders;
+    } else {
+      console.log("Unexpected orders format:", ordersResponse);
+      return false;
+    }
+
+    console.log("Processed orders array:", orders);
+
+    // Check if user has purchased this product and it's delivered
+    for (const order of orders) {
+      console.log("Checking order:", order.id, "status:", order.status);
+      if (order.status === "delivered") {
+        for (const item of order.items || []) {
+          console.log("Checking item:", item.product_id, "vs", productId);
+          if (item.product_id == productId || item.product?.id == productId) {
+            console.log("Found delivered product match!");
+            return true;
+          }
+        }
+      }
+    }
+
+    console.log("No delivered product found");
+    return false;
+  } catch (error) {
+    console.error("Error checking user purchase status:", error);
+    return false;
+  }
+}
+
+async function checkReviewEligibility(productId) {
+  console.log("Checking review eligibility for product:", productId);
+  const reviewFormContainer = document.getElementById("reviewFormContainer");
+  console.log("Review form container found:", !!reviewFormContainer);
+
+  if (!isUserLoggedIn()) {
+    console.log("User not logged in");
+    reviewFormContainer.style.display = "none";
+    return;
+  }
+
+  console.log("User is logged in, current user review:", currentUserReview);
+
+  // If user already has a review, show edit form instead of create form
+  if (currentUserReview) {
+    console.log("User already has review, showing edit form");
+    showEditReviewForm(currentUserReview);
+    return;
+  }
+
+  // Check if user has purchased this product and it's delivered
+  try {
+    const hasPurchasedAndDelivered = await checkUserPurchasedAndDelivered(
+      productId
+    );
+    console.log("Has purchased and delivered:", hasPurchasedAndDelivered);
+
+    if (!hasPurchasedAndDelivered) {
+      reviewFormContainer.style.display = "none";
+      // Optionally show a message
+      const reviewSection = document.getElementById("reviewsSection");
+      if (
+        reviewSection &&
+        !reviewSection.querySelector(".purchase-required-message")
+      ) {
+        const message = document.createElement("div");
+        message.className = "purchase-required-message";
+        message.style.cssText = `
+          background: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 8px;
+          padding: 16px;
+          margin: 16px 0;
+          text-align: center;
+          color: #6c757d;
+        `;
+        message.innerHTML = `
+          <i class="fas fa-info-circle" style="margin-right: 8px;"></i>
+          Şərh yazmaq üçün bu məhsulu almalı və çatdırılmasını gözləməlisiniz.
+        `;
+        reviewFormContainer.parentNode.insertBefore(
+          message,
+          reviewFormContainer
+        );
+      }
+      return;
+    }
+
+    // User has purchased and product is delivered, show the form
+    reviewFormContainer.style.display = "block";
+    setupReviewForm(productId);
+
+    // Remove any existing purchase required message
+    const existingMessage = document.querySelector(
+      ".purchase-required-message"
+    );
+    if (existingMessage) {
+      existingMessage.remove();
+    }
+  } catch (error) {
+    console.error("Error checking review eligibility:", error);
+    reviewFormContainer.style.display = "none";
+  }
+}
+
+function setupReviewForm(productId) {
+  const form = document.getElementById("reviewForm");
+  const starInputs = document.querySelectorAll("#starRatingInput .star");
+  const ratingValue = document.getElementById("ratingValue");
+  const commentInput = document.getElementById("reviewComment");
+  const charCount = document.getElementById("charCount");
+  const cancelBtn = document.getElementById("cancelReview");
+
+  // Setup star rating input
+  starInputs.forEach((star) => {
+    star.addEventListener("click", function () {
+      const rating = parseInt(this.dataset.rating);
+      ratingValue.value = rating;
+
+      starInputs.forEach((s, index) => {
+        if (index < rating) {
+          s.textContent = "★";
+          s.classList.add("selected");
+        } else {
+          s.textContent = "☆";
+          s.classList.remove("selected");
+        }
+      });
+    });
+
+    star.addEventListener("mouseover", function () {
+      const rating = parseInt(this.dataset.rating);
+      starInputs.forEach((s, index) => {
+        s.textContent = index < rating ? "★" : "☆";
+      });
+    });
+  });
+
+  // Reset stars on mouse leave
+  document
+    .getElementById("starRatingInput")
+    .addEventListener("mouseleave", function () {
+      const currentRating = parseInt(ratingValue.value);
+      starInputs.forEach((s, index) => {
+        s.textContent = index < currentRating ? "★" : "☆";
+      });
+    });
+
+  // Character counter
+  commentInput.addEventListener("input", function () {
+    charCount.textContent = this.value.length;
+  });
+
+  // Form submission
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const rating = parseInt(ratingValue.value);
+    const comment = commentInput.value.trim();
+
+    if (rating === 0) {
+      showNotification("Zəhmət olmasa reytinq seçin", "error");
+      return;
+    }
+
+    if (!comment) {
+      showNotification("Zəhmət olmasa şərh yazın", "error");
+      return;
+    }
+
+    try {
+      await window.API.createReview({
+        product: productId,
+        rating: rating,
+        comment: comment,
+      });
+
+      showNotification("Şərhiniz uğurla göndərildi!", "success");
+
+      // Reload reviews
+      await loadReviews(productId);
+
+      // Reset form
+      form.reset();
+      ratingValue.value = 0;
+      starInputs.forEach((s) => {
+        s.textContent = "☆";
+        s.classList.remove("selected");
+      });
+      charCount.textContent = "0";
+    } catch (error) {
+      console.error("Failed to submit review:", error);
+      if (error.message.includes("400")) {
+        showNotification(
+          "Bu məhsul üçün şərh yazmaq üçün əvvəlcə onu satın almalısınız",
+          "error"
+        );
+      } else {
+        showNotification(
+          "Şərh göndərilmədi. Zəhmət olmasa yenidən cəhd edin",
+          "error"
+        );
+      }
+    }
+  });
+
+  // Cancel button
+  cancelBtn.addEventListener("click", function () {
+    form.reset();
+    ratingValue.value = 0;
+    starInputs.forEach((s) => {
+      s.textContent = "☆";
+      s.classList.remove("selected");
+    });
+    charCount.textContent = "0";
+  });
+}
+
+function showEditReviewForm(review) {
+  const reviewFormContainer = document.getElementById("reviewFormContainer");
+  const form = document.getElementById("reviewForm");
+
+  // Fill form with existing review data
+  document.getElementById("ratingValue").value = review.rating;
+  document.getElementById("reviewComment").value = review.comment;
+  document.getElementById("charCount").textContent = review.comment.length;
+
+  // Update star display
+  const starInputs = document.querySelectorAll("#starRatingInput .star");
+  starInputs.forEach((star, index) => {
+    if (index < review.rating) {
+      star.textContent = "★";
+      star.classList.add("selected");
+    } else {
+      star.textContent = "☆";
+      star.classList.remove("selected");
+    }
+  });
+
+  // Change form title and button text
+  reviewFormContainer.querySelector("h3").textContent =
+    "Şərhinizi Redaktə Edin";
+  form.querySelector(".submit-review-btn").textContent = "Şərhi Yenilə";
+
+  reviewFormContainer.style.display = "block";
+
+  // Update form submission handler for editing
+  form.removeEventListener("submit", form._originalHandler);
+  form._originalHandler = async function (e) {
+    e.preventDefault();
+
+    const rating = parseInt(document.getElementById("ratingValue").value);
+    const comment = document.getElementById("reviewComment").value.trim();
+
+    if (rating === 0) {
+      showNotification("Zəhmət olmasa reytinq seçin", "error");
+      return;
+    }
+
+    if (!comment) {
+      showNotification("Zəhmət olmasa şərh yazın", "error");
+      return;
+    }
+
+    try {
+      await window.API.updateReview(review.id, {
+        rating: rating,
+        comment: comment,
+      });
+
+      showNotification("Şərhiniz uğurla yeniləndi!", "success");
+
+      // Reload reviews
+      const productId = new URLSearchParams(window.location.search).get("id");
+      await loadReviews(productId);
+    } catch (error) {
+      console.error("Failed to update review:", error);
+      showNotification(
+        "Şərh yenilənmədi. Zəhmət olmasa yenidən cəhd edin",
+        "error"
+      );
+    }
+  };
+
+  form.addEventListener("submit", form._originalHandler);
+}
+
+async function editReview(reviewId) {
+  const review = allReviews.find((r) => r.id === reviewId);
+  if (review) {
+    showEditReviewForm(review);
+  }
+}
+
+async function deleteReview(reviewId) {
+  if (!confirm("Şərhi silmək istədiyinizdən əminsiniz?")) {
+    return;
+  }
+
+  try {
+    await window.API.deleteReview(reviewId);
+    showNotification("Şərh uğurla silindi", "success");
+
+    // Reload reviews
+    const productId = new URLSearchParams(window.location.search).get("id");
+    await loadReviews(productId);
+  } catch (error) {
+    console.error("Failed to delete review:", error);
+    showNotification(
+      "Şərh silinmədi. Zəhmət olmasa yenidən cəhd edin",
+      "error"
+    );
+  }
+}
+
+function isUserLoggedIn() {
+  return !!localStorage.getItem("depod_user");
+}
+
+// Show More Reviews Modal
+document.addEventListener("DOMContentLoaded", function () {
+  const showMoreBtn = document.getElementById("showMoreReviews");
+  const modal = document.getElementById("reviewsModal");
+  const closeBtn = document.getElementById("reviewsModalClose");
+  const modalBody = document.getElementById("reviewsModalBody");
+
+  if (showMoreBtn) {
+    showMoreBtn.addEventListener("click", function () {
+      // Display all reviews in modal
+      const userData = isUserLoggedIn()
+        ? JSON.parse(localStorage.getItem("depod_user"))
+        : null;
+
+      modalBody.innerHTML = allReviews
+        .map((review) => {
+          const canEdit = userData && review.user_id === userData.id;
+          return createReviewHTML(review, canEdit);
+        })
+        .join("");
+
+      modal.style.display = "block";
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", function () {
+      modal.style.display = "none";
+    });
+  }
+
+  // Close modal when clicking outside
+  if (modal) {
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+  }
+});

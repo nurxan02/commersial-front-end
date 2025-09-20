@@ -762,8 +762,11 @@ document.addEventListener("DOMContentLoaded", function () {
               o.estimated_delivery ||
               o.estimatedDelivery ||
               new Date(Date.now() + 3 * 86400000).toISOString(),
-            productName: item.name || o.product_name || "Məhsul",
-            productImage: item.image || o.product_image || "",
+            productId: o.product_id || item.product_id,
+            productName:
+              o.product_name || item.name || o.product_name || "Məhsul",
+            productImage:
+              o.product_image || item.image || o.product_image || "",
             quantity: qty,
             unitPrice: unit,
             totalPrice: total,
@@ -794,9 +797,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // cache for actions
     currentOrders = sortedOrders;
 
-    const ordersHTML = sortedOrders
-      .map((order) => createOrderCard(order))
-      .join("");
+    // Create order cards with async review check
+    const orderCardsPromises = sortedOrders.map((order) =>
+      createOrderCard(order)
+    );
+    const orderCards = await Promise.all(orderCardsPromises);
+    const ordersHTML = orderCards.join("");
+
     ordersList.innerHTML =
       ordersHTML + ordersList.querySelector(".no-orders").outerHTML;
 
@@ -804,7 +811,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setupOrderFilters();
   }
 
-  function createOrderCard(order) {
+  async function createOrderCard(order) {
     const orderDate = new Date(order.createdAt).toLocaleDateString("az-AZ");
     const estimatedDelivery = new Date(
       order.estimatedDelivery
@@ -813,6 +820,22 @@ document.addEventListener("DOMContentLoaded", function () {
       const n = Number(v);
       return Number.isFinite(n) ? n.toFixed(d) : "0.00";
     };
+
+    // Check if user has already reviewed this product
+    let hasReviewed = false;
+    if (
+      order.status === "delivered" &&
+      window.API &&
+      window.API.getUserReview
+    ) {
+      try {
+        const existingReview = await window.API.getUserReview(order.productId);
+        hasReviewed = !!existingReview;
+      } catch (error) {
+        // No review found or error - assume not reviewed
+        hasReviewed = false;
+      }
+    }
 
     return `
       <div class="order-card" data-status="${order.status}">
@@ -848,6 +871,17 @@ document.addEventListener("DOMContentLoaded", function () {
             ${
               order.status === "pending"
                 ? `<button class="order-btn" onclick="cancelOrder('${order.id}')">Ləğv et</button>`
+                : ""
+            }
+            ${
+              order.status === "delivered" && !hasReviewed
+                ? `<button class="order-btn review-btn" onclick="openReviewModal('${order.productId}', '${order.productName}', '${order.id}')">
+                    <i class="fas fa-star"></i> Şərh Yaz
+                   </button>`
+                : order.status === "delivered" && hasReviewed
+                ? `<span class="review-completed">
+                    <i class="fas fa-check-circle"></i> Şərh yazılıb
+                   </span>`
                 : ""
             }
             <button class="order-btn primary" onclick="trackOrder('${
@@ -1179,6 +1213,156 @@ const modalCSS = `
   font-size: 14px;
 }
 `;
+
+// Review Modal Functions
+window.openReviewModal = function (productId, productName, orderId) {
+  const modal = document.getElementById("reviewModal");
+  const productInfo = document.getElementById("reviewProductInfo");
+  const productIdInput = document.getElementById("reviewProductId");
+  const orderIdInput = document.getElementById("reviewOrderId");
+
+  // Set product info
+  productInfo.innerHTML = `
+    <div class="product-review-info">
+      <h3>${productName}</h3>
+      <p>Bu məhsul haqqında şərhinizi yazın və reytinq verin</p>
+    </div>
+  `;
+
+  // Set form values
+  productIdInput.value = productId;
+  orderIdInput.value = orderId;
+
+  // Reset form
+  document.getElementById("reviewForm").reset();
+  document.getElementById("ratingValue").value = "0";
+  document.getElementById("charCount").textContent = "0";
+
+  // Reset stars
+  const stars = document.querySelectorAll("#starRatingInput .star");
+  stars.forEach((star) => star.classList.remove("selected"));
+
+  // Show modal
+  modal.style.display = "flex";
+
+  // Setup modal event listeners if not already done
+  if (!modal.hasAttribute("data-listeners-added")) {
+    setupReviewModalEventListeners();
+    modal.setAttribute("data-listeners-added", "true");
+  }
+};
+
+function setupReviewModalEventListeners() {
+  const modal = document.getElementById("reviewModal");
+  const closeBtn = document.getElementById("reviewModalClose");
+  const cancelBtn = document.getElementById("cancelReviewBtn");
+  const form = document.getElementById("reviewForm");
+  const commentTextarea = document.getElementById("reviewComment");
+  const charCount = document.getElementById("charCount");
+  const stars = document.querySelectorAll("#starRatingInput .star");
+  const ratingInput = document.getElementById("ratingValue");
+
+  // Close modal handlers
+  closeBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  // Close on outside click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+    }
+  });
+
+  // Character count
+  commentTextarea.addEventListener("input", () => {
+    charCount.textContent = commentTextarea.value.length;
+  });
+
+  // Star rating
+  stars.forEach((star) => {
+    star.addEventListener("click", () => {
+      const rating = parseInt(star.dataset.rating);
+      ratingInput.value = rating;
+
+      // Update star display
+      stars.forEach((s, index) => {
+        if (index < rating) {
+          s.classList.add("selected");
+          s.textContent = "★";
+        } else {
+          s.classList.remove("selected");
+          s.textContent = "☆";
+        }
+      });
+    });
+
+    star.addEventListener("mouseover", () => {
+      const rating = parseInt(star.dataset.rating);
+      stars.forEach((s, index) => {
+        if (index < rating) {
+          s.textContent = "★";
+        } else {
+          s.textContent = "☆";
+        }
+      });
+    });
+  });
+
+  // Reset stars on mouse leave
+  document
+    .getElementById("starRatingInput")
+    .addEventListener("mouseleave", () => {
+      const currentRating = parseInt(ratingInput.value) || 0;
+      stars.forEach((s, index) => {
+        if (index < currentRating) {
+          s.textContent = "★";
+        } else {
+          s.textContent = "☆";
+        }
+      });
+    });
+
+  // Form submission
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const productId = document.getElementById("reviewProductId").value;
+    const rating = parseInt(document.getElementById("ratingValue").value);
+    const comment = document.getElementById("reviewComment").value.trim();
+
+    if (!rating || rating < 1 || rating > 5) {
+      showNotification("Zəhmət olmasa 1-5 arası reytinq seçin", "error");
+      return;
+    }
+
+    if (!comment) {
+      showNotification("Zəhmət olmasa şərh yazın", "error");
+      return;
+    }
+
+    try {
+      await window.API.createReview({
+        product: productId,
+        rating: rating,
+        comment: comment,
+      });
+
+      showNotification("Şərhiniz uğurla göndərildi!", "success");
+      modal.style.display = "none";
+
+      // Refresh orders to hide review button
+      loadOrders();
+    } catch (error) {
+      console.error("Review submission error:", error);
+      showNotification("Şərh göndərilməsində xəta baş verdi", "error");
+    }
+  });
+}
 
 // Inject modal CSS
 if (!document.getElementById("modal-styles")) {

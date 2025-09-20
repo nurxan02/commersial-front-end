@@ -12,10 +12,27 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    product_id = serializers.SerializerMethodField()
+    product_name = serializers.SerializerMethodField()
+    product_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'status', 'total_price', 'created_at', 'estimated_delivery', 'items']
+        fields = ['id', 'status', 'total_price', 'created_at', 'estimated_delivery', 'items', 
+                 'product_id', 'product_name', 'product_image']
+    
+    def get_product_id(self, obj):
+        # Get the first item's product_id (assuming single product orders for now)
+        first_item = obj.items.first()
+        return first_item.product.id if first_item else None
+    
+    def get_product_name(self, obj):
+        first_item = obj.items.first()
+        return first_item.name if first_item else None
+    
+    def get_product_image(self, obj):
+        first_item = obj.items.first()
+        return first_item.image if first_item else None
 
 
 class CreateOrderSerializer(serializers.Serializer):

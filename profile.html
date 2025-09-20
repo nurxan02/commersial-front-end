@@ -10,6 +10,7 @@
     <meta name="author" content="Depod" />
 
     <!-- API Base Configuration -->
+    <meta name="depod-api-base" content="http://127.0.0.1:8000" />
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#000000" />
@@ -392,7 +393,6 @@
                           id="documentApproved"
                           style="display: none"
                         >
-                          
                           <p>Tələbə promosyonu aktiv</p>
                         </div>
 
@@ -500,6 +500,70 @@
         </div>
       </div>
     </footer>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="review-modal" style="display: none">
+      <div class="review-modal-content">
+        <div class="review-modal-header">
+          <h2>Məhsul Haqqında Şərh</h2>
+          <button class="review-modal-close" id="reviewModalClose">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="review-modal-body">
+          <div class="review-product-info" id="reviewProductInfo">
+            <!-- Product info will be populated here -->
+          </div>
+          <form id="reviewForm" class="review-form">
+            <input type="hidden" id="reviewProductId" name="product" />
+            <input type="hidden" id="reviewOrderId" name="order_id" />
+
+            <div class="rating-input">
+              <label>Reytinq (1-5 ulduz):</label>
+              <div class="star-rating-input" id="starRatingInput">
+                <span class="star" data-rating="1">☆</span>
+                <span class="star" data-rating="2">☆</span>
+                <span class="star" data-rating="3">☆</span>
+                <span class="star" data-rating="4">☆</span>
+                <span class="star" data-rating="5">☆</span>
+              </div>
+              <input
+                type="hidden"
+                id="ratingValue"
+                name="rating"
+                value="0"
+                required
+              />
+            </div>
+
+            <div class="comment-input">
+              <label for="reviewComment">Şərhiniz:</label>
+              <textarea
+                id="reviewComment"
+                name="comment"
+                placeholder="Məhsul haqqında fikirlərinizi yazın..."
+                maxlength="1000"
+                required
+              ></textarea>
+              <div class="char-count"><span id="charCount">0</span>/1000</div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="submit-review-btn">
+                Şərh Göndər
+              </button>
+              <button
+                type="button"
+                id="cancelReviewBtn"
+                class="cancel-review-btn"
+              >
+                Ləğv Et
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <!-- Scripts -->
     <script src="js/api.js"></script>

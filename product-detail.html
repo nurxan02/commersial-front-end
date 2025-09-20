@@ -260,6 +260,96 @@
       </section>
     </div>
 
+    <!-- Product Reviews Section -->
+    <section class="product-reviews">
+      <div class="container">
+        <div class="reviews-header">
+          <h2 class="section-title">Məhsul Şərhləri</h2>
+          <div class="reviews-summary" id="reviewsSummary">
+            <!-- Reviews summary will be populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Review Form (shown only to eligible users) -->
+        <div
+          class="review-form-container"
+          id="reviewFormContainer"
+          style="display: none"
+        >
+          <h3>Şərh Yazın</h3>
+          <form id="reviewForm" class="review-form">
+            <div class="rating-input">
+              <label>Reytinq:</label>
+              <div class="star-rating-input" id="starRatingInput">
+                <span class="star" data-rating="1">☆</span>
+                <span class="star" data-rating="2">☆</span>
+                <span class="star" data-rating="3">☆</span>
+                <span class="star" data-rating="4">☆</span>
+                <span class="star" data-rating="5">☆</span>
+              </div>
+              <input
+                type="hidden"
+                id="ratingValue"
+                name="rating"
+                value="0"
+                required
+              />
+            </div>
+            <div class="comment-input">
+              <label for="reviewComment">Şərh:</label>
+              <textarea
+                id="reviewComment"
+                name="comment"
+                placeholder="Məhsul haqqında fikirlərinizi yazın..."
+                maxlength="1000"
+                required
+              ></textarea>
+              <div class="char-count"><span id="charCount">0</span>/1000</div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="submit-review-btn">
+                Şərh Göndər
+              </button>
+              <button type="button" id="cancelReview" class="cancel-review-btn">
+                Ləğv Et
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Reviews List -->
+        <div class="reviews-list" id="reviewsList">
+          <!-- Reviews will be populated dynamically -->
+        </div>
+
+        <!-- Show More Button -->
+        <div
+          class="show-more-container"
+          id="showMoreContainer"
+          style="display: none"
+        >
+          <button id="showMoreReviews" class="show-more-btn">
+            Daha Çox Göstər
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews Modal -->
+    <div id="reviewsModal" class="reviews-modal" style="display: none">
+      <div class="reviews-modal-content">
+        <div class="reviews-modal-header">
+          <h2>Bütün Şərhlər</h2>
+          <button class="reviews-modal-close" id="reviewsModalClose">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="reviews-modal-body" id="reviewsModalBody">
+          <!-- All reviews will be loaded here -->
+        </div>
+      </div>
+    </div>
+
     <!-- Related Products -->
     <section class="related-products">
       <div class="container">

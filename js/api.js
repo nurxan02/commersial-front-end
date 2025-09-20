@@ -307,6 +307,104 @@
     return resp.json();
   }
 
+  // Review API methods
+  async function getProductReviews(productId, limit = null) {
+    const url = limit
+      ? apiUrl(`/api/reviews/?product_id=${productId}&limit=${limit}`)
+      : apiUrl(`/api/reviews/?product_id=${productId}`);
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    const data = await resp.json();
+    return Array.isArray(data) ? data : data.results || [];
+  }
+
+  async function getProductReviewStats(productId) {
+    const resp = await fetch(
+      apiUrl(`/api/reviews/product_stats/?product_id=${productId}`),
+      {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      }
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function getUserReview(productId) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(
+      apiUrl(`/api/reviews/user_review/?product_id=${productId}`),
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+      }
+    );
+    if (resp.status === 404) return null; // No review found
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function createReview(reviewData) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(
+      apiUrl("/api/reviews/"),
+      await withCsrfHeaders({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+        body: JSON.stringify(reviewData),
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function updateReview(reviewId, reviewData) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(
+      apiUrl(`/api/reviews/${reviewId}/`),
+      await withCsrfHeaders({
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+        body: JSON.stringify(reviewData),
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function deleteReview(reviewId) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(
+      apiUrl(`/api/reviews/${reviewId}/`),
+      await withCsrfHeaders({
+        method: "DELETE",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return true;
+  }
+
   window.API = {
     setBase,
     getCsrfToken: ensureCsrfToken,
@@ -323,6 +421,12 @@
     getSocialLinks,
     getLegalDocs,
     getHomeSettings,
+    getProductReviews,
+    getProductReviewStats,
+    getUserReview,
+    createReview,
+    updateReview,
+    deleteReview,
     _url: apiUrl,
   };
 })();

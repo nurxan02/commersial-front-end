@@ -1,0 +1,137 @@
+/* Custom CSS for ProductReview Admin */
+
+/* Review list table styling */
+.change-list table {
+    font-size: 13px;
+}
+
+.change-list table td {
+    vertical-align: top;
+    padding: 8px 6px;
+}
+
+/* User info column */
+.field-user_info {
+    min-width: 150px;
+}
+
+/* Product link styling */
+.field-product_link a {
+    color: #417690;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.field-product_link a:hover {
+    color: #205067;
+    text-decoration: underline;
+}
+
+/* Rating display styling */
+.field-rating_display {
+    text-align: center;
+    min-width: 80px;
+}
+
+/* Comment preview styling */
+.field-comment_preview {
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.field-comment_preview div {
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid #417690;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Actions column */
+.field-actions_column {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.field-actions_column .button {
+    font-size: 11px;
+    padding: 4px 8px;
+    background: #417690;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    text-decoration: none;
+}
+
+.field-actions_column .button:hover {
+    background: #205067;
+}
+
+/* Fieldset styling for detail view */
+.form-row .field-user_full_info,
+.form-row .field-product_full_info {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 10px;
+}
+
+/* Rating field in detail view */
+.form-row .field-rating {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Comment field styling */
+.form-row textarea[name="comment"] {
+    width: 100%;
+    min-height: 120px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .field-comment_preview {
+        max-width: 200px;
+    }
+    
+    .field-user_info {
+        min-width: 120px;
+    }
+}
+
+/* Success messages */
+.messagelist .success {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+/* Filter sidebar improvements */
+#changelist-filter h3 {
+    color: #417690;
+    font-weight: 600;
+}
+
+#changelist-filter li.selected a {
+    color: #417690;
+    font-weight: bold;
+}
+
+/* Search box improvements */
+#searchbar {
+    border: 2px solid #417690;
+    border-radius: 4px;
+}
+
+#searchbar:focus {
+    border-color: #205067;
+    box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.2);
+}

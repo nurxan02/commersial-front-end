@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'orders',
     'offers',
     'cms',
+    'reviews',
 ]
 
 MIDDLEWARE = [
@@ -282,7 +283,9 @@ UNFOLD = {
                 "items": [
                     {"title": _("Kateqoriyalar"), "icon": "category", "link": reverse_lazy("admin:catalog_category_changelist")},
                     {"title": _("Məhsullar"), "icon": "inventory_2", "link": reverse_lazy("admin:catalog_product_changelist")},
+                    {"title": _("Məhsul Rəyləri"), "icon": "rate_review", "link": reverse_lazy("admin:reviews_productreview_changelist")},
                     {"title": _("Məhsul şəkilləri"), "icon": "image", "link": reverse_lazy("admin:catalog_productimage_changelist")},
+
                 ],
             },
             {
@@ -315,6 +318,7 @@ UNFOLD = {
                     {"title": _("Tələbə endirim kodları"), "icon": "qr_code", "link": reverse_lazy("admin:accounts_studentpromocode_changelist")},
                 ],
             },
+            
         ],
     },
 }
