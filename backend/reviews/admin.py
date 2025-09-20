@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django import forms
+from depod_api.admin_mixins import RichTextAdminMixin
 from .models import ProductReview
 
 
@@ -24,7 +25,7 @@ class ProductReviewForm(forms.ModelForm):
 
 
 @admin.register(ProductReview)
-class ProductReviewAdmin(admin.ModelAdmin):
+class ProductReviewAdmin(RichTextAdminMixin, admin.ModelAdmin):
     form = ProductReviewForm
     list_display = ['id', 'user_display', 'product_display', 'rating_display', 'comment_preview', 'created_at']
     list_filter = ['rating', 'created_at', 'product__category']

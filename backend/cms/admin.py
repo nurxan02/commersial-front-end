@@ -1,23 +1,24 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
+from depod_api.admin_mixins import RichTextAdminMixin
 from .models import SiteSettings, AboutContent, ContactContent, ContactMessage
 from .forms import AboutAdminForm, ContactAdminForm
 
 
 @admin.register(SiteSettings)
-class SiteSettingsAdmin(ModelAdmin):
+class SiteSettingsAdmin(RichTextAdminMixin, ModelAdmin):
     list_display = ("id", "home_hero_title", "instagram", "tiktok", "facebook", "footer_email", "footer_phone")
 
 
 @admin.register(AboutContent)
-class AboutContentAdmin(ModelAdmin):
+class AboutContentAdmin(RichTextAdminMixin, ModelAdmin):
     form = AboutAdminForm
     list_display = ("id", "title", "experience_years", "product_models", "happy_customers")
     search_fields = ("title",)
 
 
 @admin.register(ContactContent)
-class ContactContentAdmin(ModelAdmin):
+class ContactContentAdmin(RichTextAdminMixin, ModelAdmin):
     form = ContactAdminForm
     list_display = ("id", "hero_title", "email_primary", "phone_primary")
     search_fields = ("hero_title",)

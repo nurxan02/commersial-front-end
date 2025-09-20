@@ -1,5 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
+from depod_api.admin_mixins import RichTextAdminMixin, RichTextTabularInlineMixin
 from .models import Category, Product, ProductImage
 from .forms import ProductAdminForm
 
@@ -11,18 +12,19 @@ class CategoryAdmin(ModelAdmin):
     list_editable = ("order_index",)
 
 
-class ProductImageInline(TabularInline):
+class ProductImageInline(RichTextTabularInlineMixin, TabularInline):
     model = ProductImage
     extra = 0
 
 
 @admin.register(Product)
-class ProductAdmin(ModelAdmin):
+class ProductAdmin(RichTextAdminMixin, ModelAdmin):
     form = ProductAdminForm
     list_display = (
         "id",
         "name",
         "category",
+    "cost_price",
         "price",
         "discount",
         "student_discount",
@@ -35,5 +37,5 @@ class ProductAdmin(ModelAdmin):
 
 
 @admin.register(ProductImage)
-class ProductImageAdmin(ModelAdmin):
+class ProductImageAdmin(RichTextAdminMixin, ModelAdmin):
     list_display = ("id", "product", "is_main")

@@ -16,6 +16,11 @@
         : value;
     el.textContent = val;
   }
+  function setHTML(selector, value) {
+    const el = qs(selector);
+    if (!el || !isStr(value)) return;
+    el.innerHTML = value;
+  }
   function updateListNonDestructive(containerSel, itemSel, arr, apply) {
     if (!Array.isArray(arr) || arr.length === 0) return; // keep defaults
     const container = qs(containerSel);
@@ -49,7 +54,8 @@
   setText(".about-subtitle", data.subtitle, 160);
 
   // Story
-  setText(".company-story .story-content .story-text p.lead", data.story, 800);
+  // Render rich text from admin
+  setHTML(".company-story .story-content .story-text p.lead", data.story);
 
   // Stats (update numbers only if present)
   if (data.experience_years != null)
@@ -74,8 +80,8 @@
     );
 
   // Mission & Vision
-  setText(".mission-vision .mv-item:nth-child(1) p", data.mission, 600);
-  setText(".mission-vision .mv-item:nth-child(2) p", data.vision, 600);
+  setHTML(".mission-vision .mv-item:nth-child(1) p", data.mission);
+  setHTML(".mission-vision .mv-item:nth-child(2) p", data.vision);
 
   // Values
   updateListNonDestructive(
@@ -109,7 +115,7 @@
 
   // Technology & Innovation
   setText(".technology .section-title", data.technology_title);
-  setText(".technology .tech-text p", data.technology_text, 600);
+  setHTML(".technology .tech-text p", data.technology_text);
   updateListNonDestructive(
     ".technology .tech-features",
     "li",
@@ -133,7 +139,7 @@
 
   // Contact CTA
   setText(".contact-cta h2", data.contact_title);
-  setText(".contact-cta p", data.contact_text, 300);
+  setHTML(".contact-cta p", data.contact_text);
 
   // Footer moved to a global singleton via /api/footer/ and js/footer.js
 })();

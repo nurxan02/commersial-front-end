@@ -27,6 +27,11 @@
         : value;
     el.textContent = val;
   }
+  function setHTML(selector, value) {
+    const el = qs(selector);
+    if (!el || !isStr(value)) return;
+    el.innerHTML = value;
+  }
 
   function findSectionByTitle(regex) {
     const sections = Array.from(
@@ -151,10 +156,9 @@
   let data = await loadFooterData();
   if (data) {
     // Description paragraph
-    setText(
+    setHTML(
       ".footer .footer-description",
-      data.description || data.footer_description || data.site_description,
-      300
+      data.description || data.footer_description || data.site_description
     );
     // Right contact block
     const contactInfo = document.querySelector(".footer-contact");
@@ -175,12 +179,9 @@
     if (bottom) {
       const text = (data.bottom_text || data.footer_note || "").trim();
       if (text) {
-        let tn = bottom.firstChild;
-        if (!tn || tn.nodeType !== Node.TEXT_NODE) {
-          tn = document.createTextNode("");
-          bottom.insertBefore(tn, bottom.firstChild || null);
-        }
-        tn.textContent = text + " ";
+        const link = bottom.querySelector("a");
+        const linkHTML = link ? link.outerHTML : "";
+        bottom.innerHTML = `${text} ${linkHTML}`;
       }
     }
 

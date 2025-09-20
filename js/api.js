@@ -113,6 +113,25 @@
     return res.json();
   }
 
+  // Lightweight fetch wrapper used by some endpoints below
+  // Ensures Accept header and Authorization token are applied consistently.
+  async function makereq(url, opts = {}) {
+    const token = localStorage.getItem("depod_access_token");
+    const finalOpts = await withCsrfHeaders({
+      credentials: "include",
+      ...opts,
+    });
+    finalOpts.headers = {
+      Accept: "application/json",
+      ...(finalOpts.headers || {}),
+    };
+    if (token) {
+      finalOpts.headers["Authorization"] =
+        finalOpts.headers?.Authorization || `Bearer ${token}`;
+    }
+    return fetch(url, finalOpts);
+  }
+
   async function listProducts(category = null) {
     const url = category
       ? apiUrl(`/api/products/?category=${encodeURIComponent(category)}`)
@@ -405,6 +424,96 @@
     return true;
   }
 
+  // --- DELIVERY ADDRESS API ---
+  async function getDeliveryAddresses() {
+    const resp = await makereq(
+      apiUrl("/api/auth/delivery-addresses/"),
+      await withCsrfHeaders({
+        credentials: "include",
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    const data = await resp.json();
+    // Always return a plain array for callers; unwrap DRF pagination if present
+    return Array.isArray(data) ? data : data.results || [];
+  }
+
+  async function createDeliveryAddress(addressData) {
+    const resp = await makereq(
+      apiUrl("/api/auth/delivery-addresses/"),
+      await withCsrfHeaders({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(addressData),
+        credentials: "include",
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function updateDeliveryAddress(addressId, addressData) {
+    const resp = await makereq(
+      apiUrl(`/api/auth/delivery-addresses/${addressId}/`),
+      await withCsrfHeaders({
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(addressData),
+        credentials: "include",
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function deleteDeliveryAddress(addressId) {
+    const resp = await makereq(
+      apiUrl(`/api/auth/delivery-addresses/${addressId}/`),
+      await withCsrfHeaders({
+        method: "DELETE",
+        credentials: "include",
+      })
+    );
+    if (!resp.ok) {
+      let errMsg = `HTTP ${resp.status}: ${resp.statusText}`;
+      try {
+        const data = await resp.json();
+        if (data && data.message) errMsg = data.message;
+      } catch (_) {}
+      const error = new Error(errMsg);
+      error.status = resp.status;
+      throw error;
+    }
+    return true;
+  }
+
+  async function setDefaultDeliveryAddress(addressId) {
+    const resp = await makereq(
+      apiUrl(`/api/auth/delivery-addresses/${addressId}/set-default/`),
+      await withCsrfHeaders({
+        method: "POST",
+        credentials: "include",
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
+  async function getDeliveryAddressChoices() {
+    const resp = await makereq(
+      apiUrl("/api/auth/delivery-addresses/choices/"),
+      await withCsrfHeaders({
+        credentials: "include",
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
+  }
+
   window.API = {
     setBase,
     getCsrfToken: ensureCsrfToken,
@@ -427,6 +536,12 @@
     createReview,
     updateReview,
     deleteReview,
+    getDeliveryAddresses,
+    createDeliveryAddress,
+    updateDeliveryAddress,
+    deleteDeliveryAddress,
+    setDefaultDeliveryAddress,
+    getDeliveryAddressChoices,
     _url: apiUrl,
   };
 })();

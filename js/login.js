@@ -223,6 +223,53 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Forgot password functionality
+  const forgotLink = document.querySelector(".forgot-password");
+  if (forgotLink) {
+    forgotLink.addEventListener("click", async function (e) {
+      e.preventDefault();
+      const email = prompt(
+        "Parolu sıfırlamaq üçün email ünvanınızı daxil edin:"
+      );
+      if (!email) return;
+      try {
+        let csrfToken = null;
+        if (window.API && typeof window.API.getCsrfToken === "function") {
+          csrfToken = await window.API.getCsrfToken();
+        }
+        const resp = await fetch(apiUrl(`/api/auth/password-reset/`), {
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+          },
+          body: (() => {
+            const fd = new FormData();
+            fd.append("email", email);
+            return fd;
+          })(),
+          credentials: "include",
+        });
+        const data = await resp.json().catch(() => ({}));
+        // Regardless of existence, backend returns success
+        if (resp.ok) {
+          alert(
+            "Əgər email mövcuddursa, parol sıfırlama bağlantısı göndərildi."
+          );
+          if (data && data.dev_reset_url) {
+            // Show a convenient clickable link in development
+            const msg = `Developer: Sıfırlama keçidi hazırdır → <a href="${data.dev_reset_url}" target="_blank" rel="noopener">Buraya klikləyin</a>`;
+            showNotification(msg, "success");
+          }
+        } else {
+          alert("Sorğu göndərilərkən xəta baş verdi. Yenidən cəhd edin.");
+        }
+      } catch (_) {
+        alert("Şəbəkə xətası. Yenidən cəhd edin.");
+      }
+    });
+  }
+
   // Real-time validation
   if (usernameInput) {
     usernameInput.addEventListener("blur", function () {

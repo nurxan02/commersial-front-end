@@ -12,6 +12,7 @@ class Order(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    delivery_address = models.ForeignKey('accounts.DeliveryAddress', on_delete=models.PROTECT, null=True, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)

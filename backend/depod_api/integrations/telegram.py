@@ -47,8 +47,24 @@ def notify_new_order(order, request: Optional[object] = None) -> None:
         f"İstifadəçi: {user_email}",
         f"Məbləğ: {order.total_price} AZN",
         f"Status: {order.status}",
-        f"Admin: {admin_link}",
     ]
+
+    # Add delivery address information
+    if order.delivery_address:
+        addr = order.delivery_address
+        lines.append("📍 <b>Çatdırılma adresi:</b>")
+        lines.append(f"   Alıcı: {addr.receiver_first_name} {addr.receiver_last_name}")
+        lines.append(f"   Telefon: {addr.phone}")
+        lines.append(f"   Şəhər: {addr.get_city_display()}")
+        # Get district display
+        district_choices = dict(addr.get_district_choices())
+        district_display = district_choices.get(addr.district, addr.district)
+        lines.append(f"   Rayon: {district_display}")
+        lines.append(f"   Ünvan: {addr.street}, {addr.building}")
+        if addr.postal_code:
+            lines.append(f"   Poçt kodu: {addr.postal_code}")
+
+    lines.append(f"Admin: {admin_link}")
 
     # Try to include first item if available
     try:

@@ -22,6 +22,8 @@ class Product(models.Model):
     main_image = models.ImageField(upload_to='products/main/', null=True, blank=True)
     in_stock = models.BooleanField(default=True)
     stock = models.IntegerField(null=True, blank=True)
+    # Admin-only: internal cost price (won't be exposed via public APIs)
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     discounted_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     discount = models.IntegerField(default=0)

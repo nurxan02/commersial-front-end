@@ -25,11 +25,16 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Order.objects.filter(user=self.request.user).order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
-        ser = CreateOrderSerializer(data=request.data)
+        ser = CreateOrderSerializer(data=request.data, context={'request': request})
         ser.is_valid(raise_exception=True)
         product_id = ser.validated_data['product_id']
         quantity = ser.validated_data['quantity']
+        delivery_address_id = ser.validated_data['delivery_address_id']
         pricing_snapshot = ser.validated_data.get('pricing_snapshot')
+
+        # Get delivery address
+        from accounts.models import DeliveryAddress
+        delivery_address = DeliveryAddress.objects.get(id=delivery_address_id, user=request.user)
 
         # Work in a transaction to avoid overselling; lock product row
         with transaction.atomic():
@@ -68,6 +73,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
             order = Order.objects.create(
                 user=request.user,
+                delivery_address=delivery_address,
                 status='pending',
                 total_price=total_price,
                 estimated_delivery=timezone.now() + timedelta(days=3),

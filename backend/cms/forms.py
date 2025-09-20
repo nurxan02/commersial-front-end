@@ -2,6 +2,7 @@ from django import forms
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 import json
+from unfold.contrib.forms.widgets import WysiwygWidget
 
 # Reuse widgets from catalog if available; fallback to local versions
 try:
@@ -277,6 +278,12 @@ class AboutAdminForm(forms.ModelForm):
         model = AboutContent
         fields = "__all__"
         widgets = {
+            # Rich text fields
+            "story": WysiwygWidget(),
+            "mission": WysiwygWidget(),
+            "vision": WysiwygWidget(),
+            "technology_text": WysiwygWidget(),
+            "contact_text": WysiwygWidget(),
             "values": IconTitleTextListWidget(),
             "team": TitleDescriptionDetailListWidget(),
             "technology_features": CatalogTextListWidget() if CatalogTextListWidget else forms.Textarea,
@@ -426,6 +433,11 @@ class ContactAdminForm(forms.ModelForm):
     model = ContactContent
     fields = "__all__"
     widgets = {
+  # Rich text fields
+  "hero_subtitle": WysiwygWidget(),
+  "form_text": WysiwygWidget(),
+  "support_text": WysiwygWidget(),
+  "catalog_text": WysiwygWidget(),
       "working_hours": WorkingHoursListWidget(),
       "faqs": FAQListWidget(),
     }

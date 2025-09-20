@@ -14,6 +14,11 @@
         : value;
     el.textContent = val;
   }
+  function setHTML(selector, value) {
+    const el = qs(selector);
+    if (!el || !isStr(value)) return;
+    el.innerHTML = value;
+  }
   function updateList(containerSel, itemSel, arr, apply) {
     if (!Array.isArray(arr) || arr.length === 0) return;
     const container = qs(containerSel);
@@ -42,7 +47,7 @@
 
   // Hero
   setText(".contact-title", data.hero_title);
-  setText(".contact-subtitle", data.hero_subtitle, 200);
+  setHTML(".contact-subtitle", data.hero_subtitle);
 
   // Contact info grid
   // Emails
@@ -90,11 +95,11 @@
 
   // Form copy
   setText(".contact-form-section .form-content h2", data.form_title);
-  setText(".contact-form-section .form-content p", data.form_text, 300);
+  setHTML(".contact-form-section .form-content p", data.form_text);
 
   // Sidebar support
   setText(".form-sidebar .sidebar-item:nth-child(1) h3", data.support_title);
-  setText(".form-sidebar .sidebar-item:nth-child(1) p", data.support_text, 200);
+  setHTML(".form-sidebar .sidebar-item:nth-child(1) p", data.support_text);
   const supportLink = qs(
     ".form-sidebar .sidebar-item:nth-child(1) .support-link"
   );
@@ -106,7 +111,7 @@
 
   // Sidebar catalog teaser
   setText(".form-sidebar .sidebar-item:nth-child(2) h3", data.catalog_title);
-  setText(".form-sidebar .sidebar-item:nth-child(2) p", data.catalog_text, 160);
+  setHTML(".form-sidebar .sidebar-item:nth-child(2) p", data.catalog_text);
   const catalogLink = qs(
     ".form-sidebar .sidebar-item:nth-child(2) .catalog-link"
   );

@@ -160,6 +160,30 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+# Email / SMTP
+# Configure SMTP from environment. In development without SMTP configured, fallback to console backend.
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND') or os.getenv('DJANGO_EMAIL_BACKEND') or 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587')) if os.getenv('EMAIL_PORT') else 587
+
+def _bool_env(val, default=False):
+    if val is None:
+        return default
+    return str(val).strip().lower() in ('1', 'true', 'yes', 'on')
+
+EMAIL_USE_TLS = _bool_env(os.getenv('EMAIL_USE_TLS'), True)
+EMAIL_USE_SSL = _bool_env(os.getenv('EMAIL_USE_SSL'), False)
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@depod.az')
+
+# If no SMTP host is provided and in DEBUG, default to console backend for safety
+if DEBUG and not EMAIL_HOST:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Frontend base URL used for links in emails (e.g., password reset)
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://127.0.0.1:5500')
+
 # CORS
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [

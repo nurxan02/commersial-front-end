@@ -1,5 +1,42 @@
 // Profile page functionality
 document.addEventListener("DOMContentLoaded", function () {
+  // Fallback notification if not already defined elsewhere
+  if (typeof window.showNotification !== "function") {
+    window.showNotification = function (message, type = "info") {
+      try {
+        // Minimal toast-like alert
+        const id = "toast-notice";
+        let t = document.getElementById(id);
+        if (!t) {
+          t = document.createElement("div");
+          t.id = id;
+          t.style.position = "fixed";
+          t.style.top = "20px";
+          t.style.right = "20px";
+          t.style.zIndex = "9999";
+          t.style.padding = "12px 16px";
+          t.style.borderRadius = "8px";
+          t.style.color = "#fff";
+          t.style.boxShadow = "0 6px 18px rgba(0,0,0,0.15)";
+          document.body.appendChild(t);
+        }
+        const colors = {
+          success: "#16a34a",
+          error: "#dc2626",
+          info: "#2563eb",
+        };
+        t.style.background = colors[type] || colors.info;
+        t.textContent = message;
+        t.style.display = "block";
+        clearTimeout(t._hideTimer);
+        t._hideTimer = setTimeout(() => (t.style.display = "none"), 2500);
+      } catch (_) {
+        // Last resort
+        alert(message);
+      }
+      console[type === "error" ? "error" : "log"](`Notice(${type}):`, message);
+    };
+  }
   // Keep the latest loaded orders in memory for actions like track/cancel
   let currentOrders = [];
   // API URL helper (reuse global API base from api.js)
@@ -1363,6 +1400,483 @@ function setupReviewModalEventListeners() {
     }
   });
 }
+
+// ===================================
+// DELIVERY ADDRESSES FUNCTIONALITY
+// ===================================
+
+let deliveryAddressChoices = null;
+let currentEditingAddressId = null;
+
+// Load delivery addresses when tab is clicked
+function loadDeliveryAddresses() {
+  const addressesList = document.getElementById("addressesList");
+  if (!addressesList) {
+    console.warn("addressesList container not found");
+    return;
+  }
+
+  if (!window.API?.getDeliveryAddresses) {
+    console.error("API getDeliveryAddresses function not available");
+    return;
+  }
+
+  // Show loading
+  addressesList.innerHTML = '<div class="loading">Yüklənir...</div>';
+
+  // Always set fallback choices first
+  deliveryAddressChoices = {
+    cities: [
+      ["baku", "Bakı"],
+      ["absheron", "Abşeron"],
+      ["sumgayit", "Sumqayıt"],
+    ],
+    districts: {
+      baku: [
+        ["binagadi", "Binəqədi"],
+        ["garadagh", "Qaradağ"],
+        ["khazar", "Xəzər"],
+        ["khatai", "Xətai"],
+        ["nasimi", "Nəsimi"],
+        ["narimanov", "Nərimanov"],
+        ["nizami", "Nizami"],
+        ["pirallahi", "Pirallahı"],
+        ["sabail", "Səbail"],
+        ["sabunchu", "Sabunçu"],
+        ["surakhani", "Suraxanı"],
+        ["yasamal", "Yasamal"],
+      ],
+      absheron: [
+        ["khirdalan", "Xırdalan"],
+        ["mehdiabad", "Mehdiabad"],
+        ["novkhani", "Novxanı"],
+        ["pirshagi", "Pirşağı"],
+        ["saray", "Saray"],
+        ["masazir", "Masazır"],
+        ["xocasen", "Xocəsən"],
+        ["seabreeze", "Seabreeze"],
+      ],
+      sumgayit: [
+        ["sumgayit_1", "Sumqayıt (1-ci mkr)"],
+        ["sumgayit_2", "Sumqayıt (2-ci mkr)"],
+        ["sumgayit_3", "Sumqayıt (3-cü mkr)"],
+      ],
+    },
+  };
+  console.log("Using fallback choices");
+
+  const needChoices = !(
+    deliveryAddressChoices && deliveryAddressChoices.districts
+  );
+  const tasks = needChoices
+    ? [
+        window.API.getDeliveryAddresses(),
+        window.API.getDeliveryAddressChoices(),
+      ]
+    : [window.API.getDeliveryAddresses()];
+
+  Promise.allSettled(tasks)
+    .then((results) => {
+      // Unpack results defensively
+      const addressesRes = results[0];
+      const choicesRes = needChoices ? results[1] : null;
+      const addressesRaw =
+        addressesRes.status === "fulfilled" ? addressesRes.value : [];
+      const choices =
+        choicesRes && choicesRes.status === "fulfilled"
+          ? choicesRes.value
+          : null;
+      console.log("Loaded choices:", choices);
+      // Override with backend data if available and valid
+      if (choices && choices.districts) {
+        deliveryAddressChoices = choices;
+      }
+
+      // Normalize addresses to a plain array
+      const addresses = Array.isArray(addressesRaw)
+        ? addressesRaw
+        : Array.isArray(addressesRaw?.results)
+        ? addressesRaw.results
+        : [];
+
+      if (addresses.length === 0) {
+        // Render a fresh empty-state block each time to avoid relying on old nodes
+        addressesList.innerHTML = `
+          <div class="no-addresses">
+            <i class="fas fa-map-marker-alt"></i>
+            <h3>Hələ çatdırılma adresiniz yoxdur</h3>
+            <p>Sifariş vermək üçün çatdırılma adresi əlavə edin</p>
+          </div>
+        `;
+      } else {
+        renderAddresses(addresses);
+      }
+    })
+    .catch((error) => {
+      console.error("Error loading delivery addresses:", error);
+      addressesList.innerHTML = '<div class="error">Adres yükləmə xətası</div>';
+    });
+}
+
+function renderAddresses(addresses) {
+  const addressesList = document.getElementById("addressesList");
+
+  addressesList.innerHTML = addresses
+    .map((address) => {
+      const districtChoices =
+        deliveryAddressChoices?.districts?.[address.city] || [];
+      const districtName =
+        districtChoices.find((d) => d[0] === address.district)?.[1] ||
+        address.district;
+      const cityName =
+        deliveryAddressChoices?.cities?.find(
+          (c) => c[0] === address.city
+        )?.[1] || address.city;
+
+      return `
+      <div class="address-card ${address.is_default ? "default" : ""}">
+        <div class="address-header">
+          <div class="address-receiver">
+            <div class="receiver-name">${address.receiver_first_name} ${
+        address.receiver_last_name
+      }</div>
+            <div class="receiver-phone">${address.phone}</div>
+          </div>
+          <div class="address-actions">
+            <button class="address-btn edit" onclick="editAddress(${
+              address.id
+            })">
+              <i class="fas fa-edit"></i> Düzəliş
+            </button>
+            ${
+              !address.is_default
+                ? `
+              <button class="address-btn default" onclick="setDefaultAddress(${address.id})">
+                <i class="fas fa-star"></i> Standart
+              </button>
+            `
+                : ""
+            }
+            <button class="address-btn delete" onclick="deleteAddress(${
+              address.id
+            })">
+              <i class="fas fa-trash"></i> Sil
+            </button>
+          </div>
+        </div>
+        <div class="address-details">
+          <div class="address-line">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>${cityName}, ${districtName}</span>
+          </div>
+          <div class="address-line">
+            <i class="fas fa-road"></i>
+            <span>${address.street}</span>
+          </div>
+          <div class="address-line">
+            <i class="fas fa-home"></i>
+            <span>${address.building}</span>
+          </div>
+          ${
+            address.postal_code
+              ? `
+            <div class="address-line">
+              <i class="fas fa-envelope"></i>
+              <span>${address.postal_code}</span>
+            </div>
+          `
+              : ""
+          }
+        </div>
+      </div>
+    `;
+    })
+    .join("");
+}
+
+// Modal functions
+function showAddressModal() {
+  const modal = document.getElementById("addressModal");
+  const form = document.getElementById("addressForm");
+  const title = document.getElementById("addressModalTitle");
+
+  // Reset form
+  form.reset();
+  currentEditingAddressId = null;
+  title.textContent = "Yeni Adres Əlavə Et";
+
+  // Reset city/district selectors
+  updateDistrictOptions();
+
+  // Ensure event listener
+  ensureCityEventListener();
+
+  modal.style.display = "flex";
+  modal.classList.add("active");
+}
+
+function hideAddressModal() {
+  const modal = document.getElementById("addressModal");
+  modal.classList.remove("active");
+  setTimeout(() => {
+    modal.style.display = "none";
+  }, 300);
+}
+
+function updateDistrictOptions() {
+  const citySelect = document.getElementById("addressCity");
+  const districtSelect = document.getElementById("addressDistrict");
+
+  if (!citySelect || !districtSelect) {
+    console.error("City or district select not found");
+    // Try again after a short delay
+    setTimeout(updateDistrictOptions, 500);
+    return;
+  }
+
+  const selectedCity = citySelect.value;
+  console.log("Selected city:", selectedCity);
+  console.log("Available choices:", deliveryAddressChoices);
+
+  // Clear district options
+  districtSelect.innerHTML = '<option value="">Rayon seçin</option>';
+
+  if (selectedCity && deliveryAddressChoices?.districts?.[selectedCity]) {
+    console.log(
+      "Districts for city:",
+      deliveryAddressChoices.districts[selectedCity]
+    );
+    districtSelect.disabled = false;
+
+    deliveryAddressChoices.districts[selectedCity].forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      districtSelect.appendChild(option);
+    });
+  } else {
+    console.log("No districts found for city or city not selected");
+    districtSelect.disabled = true;
+  }
+}
+
+// Ensure event listener is added reliably
+function ensureCityEventListener() {
+  const citySelect = document.getElementById("addressCity");
+  if (citySelect) {
+    // Remove any existing listener
+    citySelect.removeEventListener("change", updateDistrictOptions);
+    // Add fresh listener
+    citySelect.addEventListener("change", updateDistrictOptions);
+    console.log("City select event listener ensured");
+    return true;
+  }
+  return false;
+}
+
+// Address operations
+function editAddress(addressId) {
+  window.API.getDeliveryAddresses()
+    .then((addresses) => {
+      const address = addresses.find((a) => a.id === addressId);
+      if (!address) {
+        showNotification("Adres tapılmadı", "error");
+        return;
+      }
+
+      currentEditingAddressId = addressId;
+
+      // Fill form with address data
+      document.getElementById("receiverFirstName").value =
+        address.receiver_first_name;
+      document.getElementById("receiverLastName").value =
+        address.receiver_last_name;
+      document.getElementById("addressCity").value = address.city;
+
+      // Re-add event listener before updating districts
+      ensureCityEventListener();
+
+      updateDistrictOptions();
+      document.getElementById("addressDistrict").value = address.district;
+      document.getElementById("addressStreet").value = address.street;
+      document.getElementById("addressBuilding").value = address.building;
+      document.getElementById("addressPostalCode").value =
+        address.postal_code || "";
+      document.getElementById("addressPhone").value = address.phone;
+      document.getElementById("addressIsDefault").checked = address.is_default;
+
+      // Update modal title
+      document.getElementById("addressModalTitle").textContent =
+        "Adresi Düzəliş Et";
+
+      // Show modal
+      const modal = document.getElementById("addressModal");
+      modal.style.display = "flex";
+      modal.classList.add("active");
+    })
+    .catch((error) => {
+      console.error("Error fetching address:", error);
+      showNotification("Adres məlumatları alınamadı", "error");
+    });
+}
+
+function deleteAddress(addressId) {
+  if (confirm("Bu adresi silmək istədiyinizə əminsiniz?")) {
+    window.API.deleteDeliveryAddress(addressId)
+      .then(() => {
+        showNotification("Adres uğurla silindi", "success");
+        loadDeliveryAddresses();
+      })
+      .catch((error) => {
+        console.error("Error deleting address:", error);
+        // If backend returned a meaningful message, show it
+        const msg =
+          (error && error.message) ||
+          (typeof error === "string" ? error : null) ||
+          "Adres silinmədi";
+        // Special case: address used by orders
+        if (error && (error.status === 409 || /istifadə edilib/i.test(msg))) {
+          showNotification(
+            "Bu adres sifarişlərdə istifadə edilib və silinə bilməz.",
+            "error"
+          );
+        } else {
+          showNotification(msg, "error");
+        }
+      });
+  }
+}
+
+function setDefaultAddress(addressId) {
+  window.API.setDefaultDeliveryAddress(addressId)
+    .then(() => {
+      showNotification("Standart adres dəyişdirildi", "success");
+      loadDeliveryAddresses();
+    })
+    .catch((error) => {
+      console.error("Error setting default address:", error);
+      showNotification("Standart adres təyin edilmədi", "error");
+    });
+}
+
+// Event listeners for delivery addresses
+document.addEventListener("DOMContentLoaded", function () {
+  // Add address button
+  const addAddressBtn = document.getElementById("addAddressBtn");
+  if (addAddressBtn) {
+    addAddressBtn.addEventListener("click", function () {
+      showAddressModal();
+
+      // Ensure event listener is added when modal opens
+      setTimeout(() => {
+        ensureCityEventListener();
+      }, 100);
+    });
+  }
+
+  // Close modal buttons
+  const closeModal = document.getElementById("closeAddressModal");
+  const cancelBtn = document.getElementById("cancelAddressBtn");
+
+  if (closeModal) {
+    closeModal.addEventListener("click", hideAddressModal);
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", hideAddressModal);
+  }
+
+  // City change event
+  ensureCityEventListener();
+
+  // Address form submission
+  const addressForm = document.getElementById("addressForm");
+  if (addressForm) {
+    addressForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const saveBtn = document.getElementById("saveAddressBtn");
+      const saveText = document.getElementById("saveAddressText");
+      const saveSpinner = document.getElementById("saveAddressSpinner");
+
+      // Show loading
+      saveBtn.disabled = true;
+      saveText.style.display = "none";
+      saveSpinner.style.display = "inline-block";
+
+      try {
+        const formData = new FormData(this);
+        const addressData = {
+          receiver_first_name: formData.get("receiver_first_name"),
+          receiver_last_name: formData.get("receiver_last_name"),
+          city: formData.get("city"),
+          district: formData.get("district"),
+          street: formData.get("street"),
+          building: formData.get("building"),
+          postal_code: formData.get("postal_code") || null,
+          phone: formData.get("phone"),
+          is_default: formData.get("is_default") === "on",
+        };
+
+        if (currentEditingAddressId) {
+          await window.API.updateDeliveryAddress(
+            currentEditingAddressId,
+            addressData
+          );
+          showNotification("Adres uğurla yeniləndi", "success");
+        } else {
+          await window.API.createDeliveryAddress(addressData);
+          showNotification("Adres uğurla əlavə edildi", "success");
+        }
+
+        hideAddressModal();
+        loadDeliveryAddresses();
+      } catch (error) {
+        console.error("Error saving address:", error);
+        showNotification("Adres yadda saxlanmadı", "error");
+      } finally {
+        // Hide loading
+        saveBtn.disabled = false;
+        saveText.style.display = "inline";
+        saveSpinner.style.display = "none";
+      }
+    });
+  }
+
+  // Load addresses when delivery addresses tab is clicked
+  const deliveryTab = document.querySelector('[data-tab="delivery-addresses"]');
+  if (deliveryTab) {
+    deliveryTab.addEventListener("click", function () {
+      // Small delay to ensure tab is active
+      setTimeout(() => {
+        loadDeliveryAddresses();
+
+        // Also initialize event listeners for city select
+        ensureCityEventListener();
+      }, 100);
+    });
+    // If the addresses tab is the one initially active, load immediately
+    const initialActive = document.getElementById("delivery-addresses");
+    if (initialActive && initialActive.classList.contains("active")) {
+      setTimeout(() => loadDeliveryAddresses(), 50);
+    }
+  }
+
+  // Close modal when clicking outside
+  const modal = document.getElementById("addressModal");
+  if (modal) {
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) {
+        hideAddressModal();
+      }
+    });
+  }
+});
+
+// Make functions global for onclick handlers
+window.editAddress = editAddress;
+window.deleteAddress = deleteAddress;
+window.setDefaultAddress = setDefaultAddress;
 
 // Inject modal CSS
 if (!document.getElementById("modal-styles")) {

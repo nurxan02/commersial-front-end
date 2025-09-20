@@ -1747,7 +1747,7 @@ html {
 }
 
 .checkmark {
-  width: 18px;
+  width: 18px !important;
   height: 18px;
   border: 2px solid #e5e5e5;
   border-radius: 4px;
@@ -5986,5 +5986,428 @@ body.order-page {
 
   .product-review-info {
     padding: 15px;
+  }
+}
+
+/* =================================== */
+/* DELIVERY ADDRESSES STYLES */
+/* =================================== */
+
+.delivery-addresses-section {
+  width: 100%;
+}
+
+.addresses-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.addresses-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.addresses-list {
+  display: grid;
+  gap: 20px;
+}
+
+.address-card {
+  background: #ffffff;
+  border: 2px solid #e8ecef;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.address-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.address-card.default {
+  border-color: #28a745;
+  background: linear-gradient(45deg, #ffffff 0%, #f8fff9 100%);
+}
+
+.address-card.default::before {
+  content: "Standart";
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #28a745;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.address-header {
+  display: flex;
+  justify-content: between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.address-receiver {
+  flex: 1;
+}
+
+.receiver-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.receiver-phone {
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+.address-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.address-btn {
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.address-btn.edit {
+  color: #007bff;
+  background: rgba(0, 123, 255, 0.1);
+}
+
+.address-btn.edit:hover {
+  background: rgba(0, 123, 255, 0.2);
+}
+
+.address-btn.delete {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.address-btn.delete:hover {
+  background: rgba(220, 53, 69, 0.2);
+}
+
+.address-btn.default {
+  color: #28a745;
+  background: rgba(40, 167, 69, 0.1);
+}
+
+.address-btn.default:hover {
+  background: rgba(40, 167, 69, 0.2);
+}
+
+.address-details {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.address-line {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.address-line i {
+  width: 20px;
+  color: #6c757d;
+  margin-right: 10px;
+  text-align: center;
+}
+
+.no-addresses {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.no-addresses i {
+  font-size: 4rem;
+  color: #dee2e6;
+  margin-bottom: 20px;
+}
+
+.no-addresses h3 {
+  font-size: 1.5rem;
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+/* Address Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  padding: 20px 0;
+  overflow-y: auto;
+}
+
+.modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 95%;
+  max-height: none;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.3s ease;
+  margin: 20px auto;
+}
+
+.modal.active .modal-content {
+  transform: scale(1) translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #2c3e50;
+}
+
+.close-modal {
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.close-modal:hover {
+  color: #dc3545;
+}
+
+.address-form {
+  padding: 15px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.required {
+  color: #dc3545;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group select:disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 10px;
+  width: auto;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.form-actions .btn {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  flex: 1;
+}
+
+.btn.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+}
+
+.btn.btn-secondary:hover {
+  background: #5a6268;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .addresses-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .addresses-title {
+    font-size: 1.5rem;
+  }
+
+  .address-card {
+    padding: 15px;
+  }
+
+  .address-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .address-actions {
+    align-self: flex-start;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .modal-content {
+    width: 98%;
+    max-width: none;
+    margin: 5px;
+    max-height: 98vh;
+  }
+
+  .modal-header {
+    padding: 12px 15px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .address-form {
+    padding: 15px;
+  }
+
+  .form-group {
+    margin-bottom: 10px;
+  }
+
+  .form-group label {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px 10px;
+    font-size: 0.9rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    margin-top: 15px;
+    padding-top: 10px;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 10px 15px;
+    font-size: 0.9rem;
   }
 }

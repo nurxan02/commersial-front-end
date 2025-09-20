@@ -1,7 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.db.models import Q
-from .models import User
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.password_validation import validate_password
+from .models import User, DeliveryAddress
 from .models import StudentPromoCode
 from datetime import date
 
@@ -132,4 +136,104 @@ class VerifyStudentPromoCodeSerializer(serializers.Serializer):
         except StudentPromoCode.DoesNotExist:
             raise serializers.ValidationError({'code': ['Code not found']})
         attrs['promo'] = promo
+        return attrs
+
+
+class DeliveryAddressSerializer(serializers.ModelSerializer):
+    district_choices = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DeliveryAddress
+        fields = [
+            'id', 'is_default', 'city', 'district', 'street', 'building',
+            'postal_code', 'phone', 'receiver_first_name', 'receiver_last_name',
+            'created_at', 'updated_at', 'district_choices'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'district_choices']
+
+    def get_district_choices(self, obj):
+        """Return available district choices for the selected city"""
+        return obj.get_district_choices()
+
+    def create(self, validated_data):
+        # Set user from request context
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+    def validate(self, data):
+        city = data.get('city')
+        district = data.get('district')
+        
+        # Validate district choice based on city
+        if city and district:
+            valid_districts = dict(DeliveryAddress.BAKU_DISTRICTS + 
+                                 DeliveryAddress.ABSHERON_DISTRICTS + 
+                                 DeliveryAddress.SUMGAYIT_DISTRICTS)
+            
+            if city == 'baku':
+                valid_choices = [choice[0] for choice in DeliveryAddress.BAKU_DISTRICTS]
+            elif city == 'absheron':
+                valid_choices = [choice[0] for choice in DeliveryAddress.ABSHERON_DISTRICTS]
+            elif city == 'sumgayit':
+                valid_choices = [choice[0] for choice in DeliveryAddress.SUMGAYIT_DISTRICTS]
+            else:
+                valid_choices = []
+            
+            if district not in valid_choices:
+                raise serializers.ValidationError({
+                    'district': f'Invalid district for {city}. Valid choices: {valid_choices}'
+                })
+        
+        return data
+
+
+class DeliveryAddressChoicesSerializer(serializers.Serializer):
+    """Serializer to return city and district choices"""
+    cities = serializers.SerializerMethodField()
+    districts = serializers.SerializerMethodField()
+    
+    def get_cities(self, obj):
+        return DeliveryAddress.CITY_CHOICES
+    
+    def get_districts(self, obj):
+        return {
+            'baku': DeliveryAddress.BAKU_DISTRICTS,
+            'absheron': DeliveryAddress.ABSHERON_DISTRICTS,
+            'sumgayit': DeliveryAddress.SUMGAYIT_DISTRICTS,
+        }
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate(self, attrs):
+        # Always accept; do not leak account existence
+        attrs['user'] = None
+        try:
+            user = User.objects.get(email__iexact=attrs['email'])
+            attrs['user'] = user
+        except User.DoesNotExist:
+            pass
+        return attrs
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=8)
+
+    def validate(self, attrs):
+        try:
+            uid = force_str(urlsafe_base64_decode(attrs['uid']))
+            user = User.objects.get(pk=uid)
+        except Exception:
+            raise serializers.ValidationError({'uid': ['Invalid link']})
+
+        if not default_token_generator.check_token(user, attrs['token']):
+            raise serializers.ValidationError({'token': ['Invalid or expired token']})
+
+        # Validate new password with Django validators
+        validate_password(attrs['new_password'], user)
+
+        attrs['user'] = user
         return attrs

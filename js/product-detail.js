@@ -434,10 +434,14 @@ function populateProductData(product) {
     .join("");
 
   // Populate description
-  document.getElementById("productDescription").textContent =
-    product.description;
-  document.getElementById("detailedDescription").textContent =
-    product.description;
+  const descEl = document.getElementById("productDescription");
+  const detailedEl = document.getElementById("detailedDescription");
+  if (descEl && typeof product.description === "string") {
+    descEl.innerHTML = product.description;
+  }
+  if (detailedEl && typeof product.description === "string") {
+    detailedEl.innerHTML = product.description;
+  }
 
   // Populate features
   const featuresList = document.getElementById("productFeatures");
@@ -710,6 +714,42 @@ async function createOrder(productId, quantity) {
       return;
     }
 
+    // Check if user has delivery addresses
+    let defaultAddress = null;
+    try {
+      if (window.API?.getDeliveryAddresses) {
+        const addresses = await window.API.getDeliveryAddresses();
+        if (addresses.length === 0) {
+          showNotification(
+            "Çatdırılma adresi tapılmadı! Profildən adres əlavə edin.",
+            "error"
+          );
+          // Redirect to profile addresses tab
+          window.location.href = "profile.html";
+          return;
+        }
+        // Find default address or use first one
+        defaultAddress =
+          addresses.find((addr) => addr.is_default) || addresses[0];
+      }
+    } catch (e) {
+      console.error("Error checking delivery addresses:", e);
+      showNotification(
+        "Çatdırılma adresi yoxlanılrkən xəta baş verdi",
+        "error"
+      );
+      return;
+    }
+
+    if (!defaultAddress) {
+      showNotification(
+        "Çatdırılma adresi seçilməmişdir! Profildən adres əlavə edin.",
+        "error"
+      );
+      window.location.href = "profile.html";
+      return;
+    }
+
     // Enforce live stock bounds before pricing
     const maxQty =
       product && typeof product.stock === "number" ? product.stock : null;
@@ -751,6 +791,7 @@ async function createOrder(productId, quantity) {
     let orderPayload = {
       product_id: productId,
       quantity,
+      delivery_address_id: defaultAddress.id,
       pricing_snapshot: {
         unit_price: unitPrice,
         student_applied: isStudent,
@@ -763,6 +804,15 @@ async function createOrder(productId, quantity) {
         createdOrder = await window.API.createOrder(orderPayload);
       } catch (e) {
         console.warn("Backend createOrder failed:", e.message);
+        // Check if it's a delivery address error
+        if (e.message.includes("delivery") || e.message.includes("address")) {
+          showNotification(
+            "Çatdırılma adresi problemi! Profildən yenidən cəhd edin.",
+            "error"
+          );
+          window.location.href = "profile.html";
+          return;
+        }
         // Try to refresh stock and inform the user
         try {
           const latest = await window.API.getProduct(productId);

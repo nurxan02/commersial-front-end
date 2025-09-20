@@ -122,6 +122,10 @@
               <i class="fas fa-shopping-bag"></i>
               <span>Sifarişlər</span>
             </button>
+            <button class="tab-btn" data-tab="delivery-addresses">
+              <i class="fas fa-map-marker-alt"></i>
+              <span> Adreslərim</span>
+            </button>
             <button class="tab-btn" data-tab="password-reset">
               <i class="fas fa-lock"></i>
               <span>Parol Dəyişdirmə</span>
@@ -249,6 +253,28 @@
                     <a href="products.html" class="btn btn-primary"
                       >Məhsullara Bax</a
                     >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delivery Addresses Tab -->
+            <div class="tab-content" id="delivery-addresses">
+              <div class="delivery-addresses-section">
+                <div class="addresses-header">
+                  <h2 class="addresses-title">Çatdırılma Adresləri</h2>
+                  <button class="btn btn-primary" id="addAddressBtn">
+                    <i class="fas fa-plus"></i>
+                    Yeni Adres Əlavə Et
+                  </button>
+                </div>
+
+                <div class="addresses-list" id="addressesList">
+                  <!-- Addresses will be loaded dynamically -->
+                  <div class="no-addresses" style="display: none">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Həyə heç bir çatdırılma adresi yoxdur</h3>
+                    <p>Sifariş vermək üçün çatdırılma adresi əlavə edin</p>
                   </div>
                 </div>
               </div>
@@ -562,6 +588,146 @@
             </div>
           </form>
         </div>
+      </div>
+    </div>
+
+    <!-- Address Modal -->
+    <div id="addressModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="addressModalTitle">Yeni Adres Əlavə Et</h3>
+          <span class="close-modal" id="closeAddressModal">&times;</span>
+        </div>
+
+        <form id="addressForm" class="address-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="receiverFirstName"
+                >Ad <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="receiverFirstName"
+                name="receiver_first_name"
+                required
+                placeholder="Alıcının adı"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="receiverLastName"
+                >Soyad <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="receiverLastName"
+                name="receiver_last_name"
+                required
+                placeholder="Alıcının soyadı"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="addressCity"
+                >Şəhər <span class="required">*</span></label
+              >
+              <select id="addressCity" name="city" required>
+                <option value="">Şəhər seçin</option>
+                <option value="baku">Bakı</option>
+                <option value="absheron">Abşeron</option>
+                <option value="sumgayit">Sumqayıt</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="addressDistrict"
+                >Rayon <span class="required">*</span></label
+              >
+              <select id="addressDistrict" name="district" required disabled>
+                <option value="">Əvvəl şəhər seçin</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="addressStreet"
+              >Küçə <span class="required">*</span></label
+            >
+            <input
+              type="text"
+              id="addressStreet"
+              name="street"
+              required
+              placeholder="Küçə adı və ya tam adres"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="addressBuilding"
+                >Mənzil/Ev <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="addressBuilding"
+                name="building"
+                required
+                placeholder="Mənzil nömrəsi və ya ev nömrəsi"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="addressPostalCode">Poçt Kodu</label>
+              <input
+                type="text"
+                id="addressPostalCode"
+                name="postal_code"
+                placeholder="Poçt kodu (məcburi deyil)"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="addressPhone"
+              >Mobil Nömrə <span class="required">*</span></label
+            >
+            <input
+              type="tel"
+              id="addressPhone"
+              name="phone"
+              required
+              placeholder="+994501234567"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="addressIsDefault" name="is_default" />
+              <span class="checkmark"></span>
+              <span>Əsas Adres</span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="saveAddressBtn">
+              <span id="saveAddressText">Yadda Saxla</span>
+              <div
+                class="spinner"
+                id="saveAddressSpinner"
+                style="display: none"
+              ></div>
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelAddressBtn"
+            >
+              Ləğv Et
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 

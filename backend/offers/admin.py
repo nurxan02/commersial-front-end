@@ -1,10 +1,11 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
+from depod_api.admin_mixins import RichTextAdminMixin
 from .models import Offer
 
 
 @admin.register(Offer)
-class OfferAdmin(ModelAdmin):
+class OfferAdmin(RichTextAdminMixin, ModelAdmin):
     list_display = (
         "id",
         "user",

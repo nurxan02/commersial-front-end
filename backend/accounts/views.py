@@ -2,11 +2,19 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import login as django_login
 from django.utils import timezone
 from django.http import HttpResponseForbidden
+from django.db.models.deletion import ProtectedError
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
 import qrcode
 import io
 
@@ -20,8 +28,12 @@ from .serializers import (
     StudentPromoCodeSerializer,
     CreateStudentPromoCodeSerializer,
     VerifyStudentPromoCodeSerializer,
+    DeliveryAddressSerializer,
+    DeliveryAddressChoicesSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
 )
-from .models import User, StudentPromoCode
+from .models import User, StudentPromoCode, DeliveryAddress
 
 
 class RegisterView(APIView):
@@ -174,4 +186,143 @@ class StudentPromoCodeVerifyView(APIView):
                 promo.is_valid = False
                 promo.save(update_fields=['is_valid'])
             return Response(StudentPromoCodeSerializer(promo).data)
+        return Response({'message': 'Validation error', 'errors': ser.errors}, status=400)
+
+
+class DeliveryAddressViewSet(ModelViewSet):
+    serializer_class = DeliveryAddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return DeliveryAddress.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='choices')
+    def get_choices(self, request):
+        """Return city and district choices"""
+        data = {
+            'cities': DeliveryAddress.CITY_CHOICES,
+            'districts': {
+                'baku': DeliveryAddress.BAKU_DISTRICTS,
+                'absheron': DeliveryAddress.ABSHERON_DISTRICTS,
+                'sumgayit': DeliveryAddress.SUMGAYIT_DISTRICTS,
+            }
+        }
+        return Response(data)
+
+    @action(detail=True, methods=['post'], url_path='set-default')
+    def set_default(self, request, pk=None):
+        """Set address as default"""
+        address = self.get_object()
+        # Unset other defaults
+        DeliveryAddress.objects.filter(
+            user=request.user, is_default=True
+        ).update(is_default=False)
+        # Set this as default
+        address.is_default = True
+        address.save()
+        return Response(self.get_serializer(address).data)
+
+    def destroy(self, request, *args, **kwargs):
+        """Safely delete an address.
+
+        If the address is referenced by any orders (PROTECT), return 409 Conflict
+        with a clear message instead of a 500. If the deleted address was the
+        default one, automatically promote another address (latest) to default.
+        """
+        address = self.get_object()
+        # Quick pre-check via reverse relation to avoid raising ProtectedError
+        try:
+            has_orders = False
+            # Default related name from Order.delivery_address (no related_name specified)
+            if hasattr(address, 'order_set'):
+                has_orders = address.order_set.exists()
+            if has_orders:
+                return Response(
+                    {"message": "Bu adres sifarişlərdə istifadə edilib və silinə bilməz."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            # Choose a candidate to become default if we're deleting the default one
+            was_default = bool(address.is_default)
+            candidate = (
+                DeliveryAddress.objects.filter(user=request.user)
+                .exclude(pk=address.pk)
+                .order_by('-created_at')
+                .first()
+            )
+
+            try:
+                self.perform_destroy(address)
+            except ProtectedError:
+                return Response(
+                    {"message": "Bu adres sifarişlərdə istifadə edilib və silinə bilməz."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            # Promote another address to default if needed
+            if was_default and candidate:
+                candidate.is_default = True
+                candidate.save(update_fields=['is_default'])
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            # Fallback: don't leak internals
+            return Response(
+                {"message": "Adres silinərkən gözlənilməz xəta baş verdi."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def post(self, request):
+        ser = PasswordResetRequestSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        user = ser.validated_data.get('user')
+
+        # Generate and send email if user exists
+        dev_reset_url = None
+        if user:
+            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            frontend_base = getattr(settings, 'FRONTEND_BASE_URL', '')
+            reset_url = f"{frontend_base.rstrip('/')}/reset-password.html?uid={uidb64}&token={token}"
+            subject = "Parol sıfırlama"
+            message = (
+                "Salam,\n\n"
+                "Parolunuzu sıfırlamaq üçün aşağıdakı linkə klikləyin:\n"
+                f"{reset_url}\n\n"
+                "Əgər bu tələbi siz etməmisinizsə, bu mesajı nəzərə almayın.\n\n"
+                "Depod"
+            )
+            try:
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+            except Exception as e:
+                # In DEBUG, surface the reset URL to help manual testing even if SMTP fails
+                if settings.DEBUG:
+                    dev_reset_url = reset_url
+                # Avoid exposing internals in production
+                # Optionally log e here
+
+        # Always return success to avoid leaking accounts
+        payload = {"message": "Əgər email mövcuddursa, parol sıfırlama bağlantısı göndərildi."}
+        if settings.DEBUG and dev_reset_url:
+            payload["dev_reset_url"] = dev_reset_url
+        return Response(payload)
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def post(self, request):
+        ser = PasswordResetConfirmSerializer(data=request.data)
+        if ser.is_valid():
+            user = ser.validated_data['user']
+            new_password = ser.validated_data['new_password']
+            user.set_password(new_password)
+            user.save(update_fields=['password'])
+            return Response({"message": "Parol uğurla yeniləndi"})
         return Response({'message': 'Validation error', 'errors': ser.errors}, status=400)
