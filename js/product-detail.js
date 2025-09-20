@@ -219,6 +219,7 @@ async function getProductById(productId) {
           discount,
           studentDiscount,
           inStock: Boolean(inStock),
+          stock: typeof p.stock === "number" ? p.stock : null,
         };
       }
     }
@@ -350,6 +351,44 @@ function populateProductData(product) {
   const productPricing = document.getElementById("productPricing");
   if (productPricing) {
     productPricing.innerHTML = createPriceHTML(product);
+  }
+
+  // Configure quantity bounds from stock
+  const qtyInput = document.getElementById("quantity");
+  const decBtn = document.getElementById("decreaseQty");
+  const incBtn = document.getElementById("increaseQty");
+  if (qtyInput) {
+    const min = 1;
+    let max = 10;
+    if (product.inStock && typeof product.stock === "number") {
+      max = Math.max(1, product.stock);
+    }
+    if (!product.inStock) {
+      qtyInput.value = String(min);
+      qtyInput.disabled = true;
+      if (incBtn) incBtn.disabled = true;
+      if (decBtn) decBtn.disabled = true;
+    } else {
+      qtyInput.disabled = false;
+      qtyInput.min = String(min);
+      qtyInput.max = String(max);
+      const currentV = parseInt(qtyInput.value || String(min));
+      const bounded = isNaN(currentV)
+        ? min
+        : Math.max(min, Math.min(max, currentV));
+      qtyInput.value = String(bounded);
+      if (incBtn) incBtn.disabled = bounded >= max;
+      if (decBtn) decBtn.disabled = bounded <= min;
+      qtyInput.addEventListener("input", function () {
+        const maxNow = parseInt(qtyInput.max || "10");
+        let v = parseInt(qtyInput.value || "1");
+        if (isNaN(v)) v = min;
+        v = Math.max(min, Math.min(maxNow, v));
+        qtyInput.value = String(v);
+        if (incBtn) incBtn.disabled = v >= maxNow;
+        if (decBtn) decBtn.disabled = v <= min;
+      });
+    }
   }
 
   // Update Buy Now button based on stock
@@ -668,6 +707,19 @@ async function createOrder(productId, quantity) {
       return;
     }
 
+    // Enforce live stock bounds before pricing
+    const maxQty =
+      product && typeof product.stock === "number" ? product.stock : null;
+    if (maxQty !== null && quantity > maxQty) {
+      showNotification(
+        `Maksimum ${maxQty} ədəd sifariş edə bilərsiniz`,
+        "error"
+      );
+      const qi = document.getElementById("quantity");
+      if (qi) qi.value = String(Math.max(1, maxQty));
+      return;
+    }
+
     // Calculate total price
     const isStudent = getUserStudentStatus() === "approved";
     let unitPrice = isNum(toNum(product.discountedPrice))
@@ -707,31 +759,43 @@ async function createOrder(productId, quantity) {
       try {
         createdOrder = await window.API.createOrder(orderPayload);
       } catch (e) {
-        console.warn("Backend createOrder failed, falling back:", e.message);
+        console.warn("Backend createOrder failed:", e.message);
+        // Try to refresh stock and inform the user
+        try {
+          const latest = await window.API.getProduct(productId);
+          if (latest && typeof latest.stock === "number") {
+            currentProduct.stock = latest.stock;
+            const qi = document.getElementById("quantity");
+            if (qi) {
+              qi.max = String(Math.max(1, latest.stock));
+              if (parseInt(qi.value) > latest.stock) {
+                qi.value = String(Math.max(1, latest.stock));
+              }
+            }
+            const buyNowBtn = document.getElementById("buyNowBtn");
+            if (buyNowBtn && latest.stock <= 0) {
+              buyNowBtn.disabled = true;
+              buyNowBtn.innerHTML = '<i class="fas fa-ban"></i> Stokda Yoxdur';
+            }
+            showNotification(
+              latest.stock <= 0
+                ? "Bu məhsul hazırda stokda yoxdur"
+                : `Yalnız ${latest.stock} ədəd mövcuddur`,
+              "error"
+            );
+            return;
+          }
+        } catch (_) {}
+        showNotification("Sifariş zamanı xəta baş verdi", "error");
+        return;
       }
     }
-
     if (!createdOrder) {
-      // Fallback to localStorage order simulation
-      const order = {
-        id: generateOrderId(),
-        userId: userData?.id,
-        productId: productId,
-        productName: product.name,
-        productImage: product.images.main,
-        quantity: quantity,
-        unitPrice: unitPrice,
-        totalPrice: totalPrice,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        estimatedDelivery: getEstimatedDelivery(),
-      };
-      const existingOrders = JSON.parse(
-        localStorage.getItem("depod_orders") || "[]"
+      // Do not simulate order when backend failed; notify user only
+      showNotification(
+        "Sifariş icra edilmədi. Zəhmət olmasa yenidən cəhd edin.",
+        "error"
       );
-      existingOrders.push(order);
-      localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
-      initiatePayment(order);
       return;
     }
 
