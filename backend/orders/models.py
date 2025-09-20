@@ -25,6 +25,15 @@ class Order(models.Model):
         except Exception:
             user_label = str(self.user_id)
         return f"Order #{self.id} — {user_label}"
+    
+    def get_total_profit(self):
+        """Calculate total profit for this order (selling price - cost price)"""
+        total_profit = 0
+        for item in self.items.all():
+            if item.product and item.product.cost_price:
+                item_profit = (item.unit_price - item.product.cost_price) * item.quantity
+                total_profit += item_profit
+        return total_profit
 
 
 class OrderItem(models.Model):
@@ -40,3 +49,13 @@ class OrderItem(models.Model):
         # Prefer stored name so it remains accurate even if product is renamed later
         base = self.name or (self.product.name if self.product_id else f"Item #{self.id}")
         return f"{base} × {self.quantity}"
+    
+    def get_unit_profit(self):
+        """Calculate profit per unit (selling price - cost price)"""
+        if self.product and self.product.cost_price:
+            return self.unit_price - self.product.cost_price
+        return 0
+    
+    def get_total_profit(self):
+        """Calculate total profit for this item (unit profit × quantity)"""
+        return self.get_unit_profit() * self.quantity

@@ -13,7 +13,7 @@ urlpatterns = [
     path('favicon.ico', RedirectView.as_view(url=static_tag('favicon.ico'), permanent=True)),
     path('favicon.svg', RedirectView.as_view(url=static_tag('favicon.svg'), permanent=True)),
 ] + i18n_patterns(
-    path('admin/', admin.site.urls),
+    path('admin/', include('depod_api.admin_urls')),
 )
 
 # Serve media in dev
