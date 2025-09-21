@@ -193,6 +193,10 @@ if DEBUG and not EMAIL_HOST:
 # Frontend base URL used for links in emails (e.g., password reset)
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://127.0.0.1:5500')
 
+# Payments
+PAYRIFF_BASE_URL = os.getenv('PAYRIFF_BASE_URL', 'https://api.payriff.com')
+PAYRIFF_SECRET_KEY = os.getenv('PAYRIFF_SECRET_KEY', '')
+
 # CORS
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [

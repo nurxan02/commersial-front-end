@@ -22,12 +22,17 @@ class LegalDocsView(APIView):
     def get(self, request):
         obj = SiteSettings.objects.first()
         if not obj:
-            return Response({'terms_pdf_url': None, 'privacy_pdf_url': None})
+            return Response({'terms_pdf_url': None, 'privacy_pdf_url': None, 'distance_sale_pdf_url': None, 'delivery_returns_pdf_url': None})
         def abs_url(f):
             if not f:
                 return None
             return request.build_absolute_uri(f.url)
-        return Response({'terms_pdf_url': abs_url(obj.terms_pdf), 'privacy_pdf_url': abs_url(obj.privacy_pdf)})
+        return Response({
+            'terms_pdf_url': abs_url(obj.terms_pdf),
+            'privacy_pdf_url': abs_url(obj.privacy_pdf),
+            'distance_sale_pdf_url': abs_url(obj.distance_sale_pdf),
+            'delivery_returns_pdf_url': abs_url(obj.delivery_returns_pdf),
+        })
 
 
 class FooterView(APIView):

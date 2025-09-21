@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "migrate cms legal pdfs",
+			"type": "shell",
+			"command": "python manage.py makemigrations cms && python manage.py migrate",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		}
+	]
+}

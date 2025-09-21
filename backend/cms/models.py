@@ -7,6 +7,9 @@ class SiteSettings(models.Model):
     facebook = models.URLField(blank=True, null=True)
     terms_pdf = models.FileField(upload_to='legal/', null=True, blank=True)
     privacy_pdf = models.FileField(upload_to='legal/', null=True, blank=True)
+    # Additional legal documents
+    distance_sale_pdf = models.FileField(upload_to='legal/', null=True, blank=True)
+    delivery_returns_pdf = models.FileField(upload_to='legal/', null=True, blank=True)
     # Home page hero texts
     home_hero_title = models.CharField(max_length=255, blank=True)
     home_hero_subtitle = models.TextField(blank=True)

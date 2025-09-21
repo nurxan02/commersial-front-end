@@ -310,7 +310,7 @@
       credentials: "include",
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
-    // expected: { terms_pdf_url: string, privacy_pdf_url: string }
+    // expected: { terms_pdf_url, privacy_pdf_url, distance_sale_pdf_url, delivery_returns_pdf_url }
     return resp.json();
   }
 

@@ -289,6 +289,14 @@
 
       const termsA = ensureLink("İstifadə şərtləri", "terms");
       const privacyA = ensureLink("Məxfilik siyasəti", "privacy");
+      const distanceSaleA = ensureLink(
+        "Məsafədən Satış Müqaviləsi",
+        "distance-sale"
+      );
+      const deliveryReturnsA = ensureLink(
+        "Çatdırılma və Qaytarma Şərtləri",
+        "delivery-returns"
+      );
 
       // Try to load URLs from API and set hrefs
       let docs = null;
@@ -310,8 +318,20 @@
         const termsUrl = docs.terms_pdf_url || docs.termsUrl || docs.terms;
         const privacyUrl =
           docs.privacy_pdf_url || docs.privacyUrl || docs.privacy;
+        const distanceSaleUrl =
+          docs.distance_sale_pdf_url ||
+          docs.distanceSaleUrl ||
+          docs.distance_sale;
+        const deliveryReturnsUrl =
+          docs.delivery_returns_pdf_url ||
+          docs.deliveryReturnsUrl ||
+          docs.delivery_returns;
         if (termsUrl && termsA) termsA.href = termsUrl;
         if (privacyUrl && privacyA) privacyA.href = privacyUrl;
+        if (distanceSaleUrl && distanceSaleA)
+          distanceSaleA.href = distanceSaleUrl;
+        if (deliveryReturnsUrl && deliveryReturnsA)
+          deliveryReturnsA.href = deliveryReturnsUrl;
       }
     }
   } catch (e) {

@@ -18,6 +18,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     estimated_delivery = models.DateTimeField()
     pricing_snapshot = models.JSONField(null=True, blank=True)
+    # (payment fields removed)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

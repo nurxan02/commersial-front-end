@@ -7,7 +7,19 @@ from .forms import AboutAdminForm, ContactAdminForm
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(RichTextAdminMixin, ModelAdmin):
-    list_display = ("id", "home_hero_title", "instagram", "tiktok", "facebook", "footer_email", "footer_phone")
+    list_display = (
+        "id",
+        "home_hero_title",
+        "instagram",
+        "tiktok",
+        "facebook",
+        "footer_email",
+        "footer_phone",
+        "terms_pdf",
+        "privacy_pdf",
+        "distance_sale_pdf",
+        "delivery_returns_pdf",
+    )
 
 
 @admin.register(AboutContent)

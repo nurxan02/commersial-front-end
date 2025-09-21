@@ -873,13 +873,11 @@ async function createOrder(productId, quantity) {
       localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
     } catch (_) {}
 
-    // Redirect to success page immediately after confirmed order creation
-    // Persisted a light copy in localStorage above for the success page to render
+    // Redirect to success page (demo) or legacy simulated gateway
     try {
       window.location.href = `order-success.html?orderId=${orderForPayment.id}&status=confirmed`;
       return;
     } catch (_) {
-      // Fallback to legacy simulated payment if redirect fails for any reason
       initiatePayment(orderForPayment);
     }
   } catch (error) {
