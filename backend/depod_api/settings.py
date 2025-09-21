@@ -175,7 +175,16 @@ EMAIL_USE_TLS = _bool_env(os.getenv('EMAIL_USE_TLS'), True)
 EMAIL_USE_SSL = _bool_env(os.getenv('EMAIL_USE_SSL'), False)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@depod.az')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'orders@depod.az')
+
+# Email headers to improve deliverability and reduce spam score
+EMAIL_SUBJECT_PREFIX = ''  # Remove [Django] prefix
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'system@depod.az')
+
+# Additional email settings for better deliverability and reliability
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '10'))  # Reduce timeout to 10 seconds
+EMAIL_USE_LOCALTIME = False  # Use UTC for email timestamps
+EMAIL_CONNECTION_MAX_AGE = 300  # Keep connection alive for 5 minutes
 
 # If no SMTP host is provided and in DEBUG, default to console backend for safety
 if DEBUG and not EMAIL_HOST:

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="az">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sifarişiniz Təsdiqləndi</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #333333;
+        background-color: #f8fafc;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        background: linear-gradient(45deg, #000000 0%, #013af6 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      .header p {
+        opacity: 0.9;
+        font-size: 0.9rem;
+      }
+
+      .header .company-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .content {
+        padding: 2rem;
+      }
+
+      .order-info {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .order-number {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1a202c;
+      }
+
+      .order-date {
+        color: #718096;
+        font-size: 0.9rem;
+      }
+
+      .products-section {
+        margin-bottom: 2rem;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+
+      .product-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        background-color: #ffffff;
+      }
+
+      .product-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-right: 1rem;
+        background-color: #f7fafc;
+      }
+
+      .product-details {
+        flex: 1;
+      }
+
+      .product-name {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 0.25rem;
+      }
+
+      .product-quantity {
+        color: #718096;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .product-price {
+        font-weight: 600;
+        color: #2d3748;
+      }
+
+      .delivery-info {
+        background-color: #edf2f7;
+        border-left: 4px solid #4299e1;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .delivery-title {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 0.5rem;
+      }
+
+      .delivery-address {
+        color: #4a5568;
+        line-height: 1.5;
+      }
+
+      .total-section {
+        background-color: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+
+      .total-final {
+        border-top: 2px solid #e2e8f0;
+        padding-top: 1rem;
+        margin-top: 1rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1a202c;
+      }
+
+      .footer {
+        background-color: #2d3748;
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .footer p {
+        margin-bottom: 0.5rem;
+        opacity: 0.9;
+      }
+
+      .contact-info {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      @media (max-width: 600px) {
+        .email-container {
+          margin: 0;
+          border-radius: 0;
+        }
+
+        .content {
+          padding: 1rem;
+        }
+
+        .header {
+          padding: 1.5rem;
+        }
+
+        .order-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .product-item {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .product-image {
+          margin-right: 0;
+          margin-bottom: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <!-- Header -->
+      <div class="header">
+        <div class="company-name">DEPOD.AZ</div>
+        <h1>Sifarişiniz Təsdiqləndi</h1>
+        <p>
+          Hörmətli {{ user.first_name|default:user.email|default:"müştəri" }},
+          sifarişiniz uğurla qəbul edildi
+        </p>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Order Info -->
+        <div class="order-info">
+          <div class="order-header">
+            <div class="order-number">Sifariş #{{ order.id }}</div>
+            <div class="order-date">
+              {{ order.created_at|date:"d F Y, H:i" }}
+            </div>
+          </div>
+          <p>
+            <strong>Status:</strong>
+            <span style="color: #3182ce">Gözləyir</span>
+          </p>
+          <p>
+            <strong>Təxmini çatdırılma:</strong> {{ order.estimated_delivery|date:"d F Y" }}
+          </p>
+        </div>
+
+        <!-- Products -->
+        <div class="products-section">
+          <h2 class="section-title">📦 Sifariş edilən məhsullar</h2>
+          {% for item in order.items.all %}
+          <div class="product-item">
+            {% if item.image %}
+            <img
+              src="{{ item.image }}"
+              alt="{{ item.name }}"
+              class="product-image"
+            />
+            {% else %}
+            <div
+              class="product-image"
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #f7fafc;
+                color: #a0aec0;
+              "
+            >
+              📦
+            </div>
+            {% endif %}
+            <div class="product-details">
+              <div class="product-name">{{ item.name }}</div>
+              <div class="product-quantity">
+                Miqdar: {{ item.quantity }} ədəd
+              </div>
+              <div class="product-price">
+                {{ item.unit_price }} AZN × {{ item.quantity }} = {{ item.subtotal }} AZN
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Delivery Info -->
+        {% if order.delivery_address %}
+        <div class="delivery-info">
+          <div class="delivery-title">🚚 Çatdırılma ünvanı</div>
+          <div class="delivery-address">
+            {{ order.delivery_address.receiver_first_name }} {{ order.delivery_address.receiver_last_name }}<br />
+            {{ order.delivery_address.city }}, {{order.delivery_address.district }}<br />
+            {{ order.delivery_address.street }}{% if order.delivery_address.building %}, {{ order.delivery_address.building }}{% endif %}<br />
+            {% if order.delivery_address.postal_code %}Poçt kodu: {{ order.delivery_address.postal_code }}<br />
+            {% endif %} Telefon: {{ order.delivery_address.phone }}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Total -->
+        <div class="total-section">
+          <div class="total-row">
+            <span>Məhsulların dəyəri:</span>
+            <span>{{ order.total_price }} AZN</span>
+          </div>
+          <div class="total-row">
+            <span>Çatdırılma:</span>
+            <span>Pulsuz</span>
+          </div>
+          <div class="total-row total-final">
+            <span>Cəmi:</span>
+            <span>{{ order.total_price }} AZN</span>
+          </div>
+        </div>
+
+        <p
+          style="
+            color: #718096;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 2rem;
+          "
+        >
+          Sifarişiniz barədə yenilik olduqda sizə məlumat veriləcək.
+          Təşəkkürlər!
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p><strong>{{ site_name }}</strong></p>
+        <p>Mobil aksesuarları və elektron məhsullar</p>
+        <div class="contact-info">
+          <p>📧 {{ support_email }} | 📞 +99477 333 41 42</p>
+          <p>© {{ current_year }} {{ site_name }}. Bütün hüquqlar qorunur.</p>
+          <p style="font-size: 0.8rem; margin-top: 0.5rem">
+            Bu e-poçt avtomatik göndərilmişdir. 
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

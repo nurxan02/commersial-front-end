@@ -1,6 +1,4 @@
-{% extends "admin/base_site.html" %} {% load i18n static %} {% block title %}{%
-trans 'Site administration' %}{% endblock %} {% block extrahead %} {{
-block.super }}
+{% extends "admin/base_site.html" %} {% load i18n static %} {% block title %}{% trans 'Site administration' %}{% endblock %} {% block extrahead %} {{ block.super }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   // CSRF token for AJAX requests
@@ -374,7 +372,7 @@ block.super }}
   <div class="dashboard-widget">
     <h2 class="widget-title">
       <span class="material-symbols-outlined">attach_money</span>
-      Mənfəət (Price - Cost)
+      Mənfəət (Pərakəndə - Alış)
     </h2>
     <div class="widget-value" id="total-profit">0 AZN</div>
     <div class="widget-subtitle" id="profit-subtitle">

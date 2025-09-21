@@ -1,0 +1,33 @@
+Depod.az - Sifariş Təslim Edildi
+
+Hörmətli {{ user.first_name|default:user.email }},
+
+Sifarişiniz uğurla çatdırıldı! 🎉
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SİFARİŞ MƏLUMATLARI
+
+Sifariş nömrəsi: #{{ order.id }}
+Çatdırılma tarixi: {% now "d F Y" %}
+Status: Təslim edildi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÇATDIRILMIŞ MƏHSULLAR
+
+{% for item in order.items.all %}• {{ item.name }} × {{ item.quantity }}
+{% endfor %}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{ site_name }}-dan alış-veriş etdiyiniz üçün təşəkkür edirik!
+
+Məhsullarımızdan razı qaldınız? 
+Rəyinizi bildirərək digər müştərilərə kömək edin.
+
+Əlaqə üçün:
+📧 {{ support_email }}
+📞 +994XX XXX XX XX
+
+Təşəkkürlər,
+{{ site_name }}

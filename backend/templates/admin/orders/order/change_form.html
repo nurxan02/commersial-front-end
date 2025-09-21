@@ -1,5 +1,4 @@
-{% extends "admin/change_form.html" %} {% load i18n static %} {% block extrahead
-%} {{ block.super }}
+{% extends "admin/change_form.html" %} {% load i18n static %} {% block extrahead %} {{ block.super }}
 <style>
   .status-selector {
     display: grid;
@@ -196,8 +195,7 @@
       <div class="summary-title">Çatdırılma Ünvanı</div>
       <div class="summary-value" style="font-size: 1rem">
         {% if original.delivery_address %} {{ original.delivery_address.city }},
-        {{ original.delivery_address.district }} {% if
-        original.delivery_address.street %}
+        {{ original.delivery_address.district }} {% if original.delivery_address.street %}
         <div
           style="
             font-size: 0.875rem;
@@ -285,8 +283,8 @@
     {% endfor %}
   </div>
 </fieldset>
-{% endif %} {{ block.super }}
-
+{% endif %}
+{{ block.super }}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const statusOptions = document.querySelectorAll(".status-option");

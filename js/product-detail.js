@@ -725,7 +725,7 @@ async function createOrder(productId, quantity) {
             "error"
           );
           // Redirect to profile addresses tab
-          window.location.href = "profile.html";
+          window.location.href = "profile.html?tab=delivery-addresses";
           return;
         }
         // Find default address or use first one
@@ -746,7 +746,7 @@ async function createOrder(productId, quantity) {
         "Çatdırılma adresi seçilməmişdir! Profildən adres əlavə edin.",
         "error"
       );
-      window.location.href = "profile.html";
+      window.location.href = "profile.html?tab=delivery-addresses";
       return;
     }
 
@@ -806,11 +806,8 @@ async function createOrder(productId, quantity) {
         console.warn("Backend createOrder failed:", e.message);
         // Check if it's a delivery address error
         if (e.message.includes("delivery") || e.message.includes("address")) {
-          showNotification(
-            "Çatdırılma adresi problemi! Profildən yenidən cəhd edin.",
-            "error"
-          );
-          window.location.href = "profile.html";
+          showNotification("Profildən çatdırılma adresi əlavə edin!", "error");
+          window.location.href = "profile.html?tab=delivery-addresses";
           return;
         }
         // Try to refresh stock and inform the user
@@ -876,7 +873,15 @@ async function createOrder(productId, quantity) {
       localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
     } catch (_) {}
 
-    initiatePayment(orderForPayment);
+    // Redirect to success page immediately after confirmed order creation
+    // Persisted a light copy in localStorage above for the success page to render
+    try {
+      window.location.href = `order-success.html?orderId=${orderForPayment.id}&status=confirmed`;
+      return;
+    } catch (_) {
+      // Fallback to legacy simulated payment if redirect fails for any reason
+      initiatePayment(orderForPayment);
+    }
   } catch (error) {
     console.error("Order creation failed:", error);
     showNotification("Sifarişin yaradılmasında xəta baş verdi!", "error");

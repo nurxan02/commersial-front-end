@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="az">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sifarişiniz Çatdırıldı</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #333333;
+        background-color: #f8fafc;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        opacity: 0.9;
+        font-size: 0.9rem;
+      }
+
+      .success-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .content {
+        padding: 2rem;
+      }
+
+      .order-info {
+        background-color: #f0fff4;
+        border: 1px solid #9ae6b4;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .order-number {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1a202c;
+      }
+
+      .delivery-date {
+        color: #38a169;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .thank-you-section {
+        text-align: center;
+        background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .thank-you-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 1rem;
+      }
+
+      .thank-you-message {
+        color: #4a5568;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+      }
+
+      .rating-section {
+        background-color: #fffaf0;
+        border: 1px solid #fbd38d;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        text-align: center;
+      }
+
+      .rating-title {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 0.5rem;
+      }
+
+      .rating-message {
+        color: #744210;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+      }
+
+      .stars {
+        font-size: 1.5rem;
+        color: #f6ad55;
+        margin-bottom: 1rem;
+      }
+
+      .products-summary {
+        margin-bottom: 2rem;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+
+      .product-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        background-color: #ffffff;
+      }
+
+      .product-image {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-right: 1rem;
+        background-color: #f7fafc;
+      }
+
+      .product-details {
+        flex: 1;
+      }
+
+      .product-name {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+      }
+
+      .product-quantity {
+        color: #718096;
+        font-size: 0.8rem;
+      }
+
+      .contact-section {
+        background-color: #edf2f7;
+        border-left: 4px solid #4299e1;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .contact-title {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 0.5rem;
+      }
+
+      .contact-info {
+        color: #4a5568;
+        line-height: 1.5;
+        font-size: 0.9rem;
+      }
+
+      .footer {
+        background-color: #2d3748;
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .footer p {
+        margin-bottom: 0.5rem;
+        opacity: 0.9;
+      }
+
+      .footer-contact {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      @media (max-width: 600px) {
+        .email-container {
+          margin: 0;
+          border-radius: 0;
+        }
+
+        .content {
+          padding: 1rem;
+        }
+
+        .header {
+          padding: 1.5rem;
+        }
+
+        .order-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .product-item {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .product-image {
+          margin-right: 0;
+          margin-bottom: 0.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <!-- Header -->
+      <div class="header">
+        <div class="success-icon"><h2>Depod.az</h2></div>
+        <h1>Sifarişiniz Çatdırıldı!</h1>
+        <p>Sifariş #{{ order.id }} uğurla təslim edildi</p>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Order Info -->
+        <div class="order-info">
+          <div class="order-header">
+            <div class="order-number">Sifariş #{{ order.id }}</div>
+            <div class="delivery-date"> Çatdırıldı: {% now "d F Y" %}</div>
+          </div>
+          <p>
+            <strong>Status:</strong>
+            <span style="color: #38a169">Təslim edildi</span>
+          </p>
+          {% if order.delivery_address %}
+          <p>
+            <strong>Çatdırılma ünvanı:</strong> {{ order.delivery_address.city }}, {{ order.delivery_address.district }}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Thank You Section -->
+        <div class="thank-you-section">
+          <div class="thank-you-title">🙏 Təşəkkürlər!</div>
+          <div class="thank-you-message">
+            Hörmətli {{ order.user.first_name|default:order.user.email|default:"müştəri" }},<br /><br />
+            DEPOD.AZ-dan alış-veriş etdiyiniz üçün təşəkkür edirik! Sifarişiniz
+            uğurla çatdırıldı və ümid edirik ki, məhsullarımızdan razı
+            qalacaqsınız.
+            <br /><br />
+            Bizimlə alış-veriş etməyiniz bizim üçün böyük şərəfdir.
+          </div>
+        </div>
+
+        <!-- Products Summary -->
+        <div class="products-summary">
+          <h2 class="section-title">📦 Çatdırılan məhsullar</h2>
+          {% for item in order.items.all %}
+          <div class="product-item">
+            {% if item.image %}
+            <img
+              src="{{ item.image }}"
+              alt="{{ item.name }}"
+              class="product-image"
+            />
+            {% else %}
+            <div
+              class="product-image"
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #f7fafc;
+                color: #a0aec0;
+              "
+            >
+              📦
+            </div>
+            {% endif %}
+            <div class="product-details">
+              <div class="product-name">{{ item.name }}</div>
+              <div class="product-quantity">{{ item.quantity }} ədəd</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Rating Section -->
+        <div class="rating-section">
+          <div class="rating-title">⭐ Təcrübənizi bizlərlə bölüşün</div>
+          <div class="rating-message">
+            Məhsullarımızdan razı qaldınız? Rəyinizi bildirərək digər
+            müştərilərə kömək edin!
+          </div>
+          <div class="stars">⭐ ⭐ ⭐ ⭐ ⭐</div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="contact-section">
+          <div class="contact-title">💬 Bizimlə əlaqə</div>
+          <div class="contact-info">
+            Hər hansı sual və ya problemlə bağlı bizimlə əlaqə saxlamaqdan
+            çəkinməyin.<br />
+            📧 <strong>Email:</strong> info@depod.az<br />
+            📞 <strong>Telefon:</strong> +99477 333 41 42<br />
+            🕒 <strong>İş saatları:</strong> Bazar ertəsi - Şənbə, 09:00-18:00
+          </div>
+        </div>
+
+        <p
+          style="
+            color: #718096;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 2rem;
+          "
+        >
+          Yenidən bizimlə alış-veriş etməyinizi səbirsizliklə gözləyirik! 🛍️
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p><strong>{{ site_name }}</strong></p>
+        <p>Mobil aksesuarları və elektron məhsullar</p>
+        <div class="contact-info">
+          <p>📧 {{ support_email }} | 📞 +99477 333 41 42</p>
+          <p>© {{ current_year }} {{ site_name }}. Bütün hüquqlar qorunur.</p>
+          <p style="font-size: 0.8rem; margin-top: 0.5rem">
+            Bu e-poçt avtomatik göndərilmişdir. 
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
+from django.contrib import messages
 from unfold.admin import ModelAdmin, TabularInline
 from depod_api.admin_mixins import RichTextAdminMixin, RichTextTabularInlineMixin
 from .models import Order, OrderItem
+from .email_utils import send_order_confirmation_email, send_order_delivered_email
 
 
 class OrderItemInline(RichTextTabularInlineMixin, TabularInline):
@@ -20,6 +22,49 @@ class OrderAdmin(RichTextAdminMixin, ModelAdmin):
     list_editable = ("status",)
     inlines = [OrderItemInline]
     readonly_fields = ('pricing_snapshot',)
+    actions = ['send_confirmation_email', 'send_delivery_email']
+    
+    def send_confirmation_email(self, request, queryset):
+        """Send order confirmation emails for selected orders."""
+        success_count = 0
+        for order in queryset:
+            if send_order_confirmation_email(order):
+                success_count += 1
+            
+        if success_count == queryset.count():
+            self.message_user(
+                request,
+                f'Təsdiq maili {success_count} sifariş üçün uğurla göndərildi.',
+                messages.SUCCESS
+            )
+        else:
+            self.message_user(
+                request,
+                f'{success_count}/{queryset.count()} təsdiq maili göndərildi.',
+                messages.WARNING
+            )
+    send_confirmation_email.short_description = "Seçilən sifarişlər üçün təsdiq maili göndər"
+    
+    def send_delivery_email(self, request, queryset):
+        """Send delivery confirmation emails for selected orders."""
+        success_count = 0
+        for order in queryset:
+            if send_order_delivered_email(order):
+                success_count += 1
+            
+        if success_count == queryset.count():
+            self.message_user(
+                request,
+                f'Çatdırılma maili {success_count} sifariş üçün uğurla göndərildi.',
+                messages.SUCCESS
+            )
+        else:
+            self.message_user(
+                request,
+                f'{success_count}/{queryset.count()} çatdırılma maili göndərildi.',
+                messages.WARNING
+            )
+    send_delivery_email.short_description = "Seçilən sifarişlər üçün çatdırılma maili göndər"
     
     def user_link(self, obj):
         """Create a clickable link to the user admin page."""

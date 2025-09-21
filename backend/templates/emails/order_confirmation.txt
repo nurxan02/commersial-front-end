@@ -1,0 +1,38 @@
+Depod.az - Sifariş Təsdiqi
+
+Hörmətli {{ user.first_name|default:user.email }},
+
+Sifarişiniz uğurla qəbul edildi!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SİFARİŞ MƏLUMATLARI
+
+Sifariş nömrəsi: #{{ order.id }}
+Tarix: {{ order.created_at|date:"d F Y, H:i" }}
+Status: Gözləyir
+Cəmi məbləğ: {{ order.total_price }} AZN
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MƏHSULLAR
+
+{% for item in order.items.all %}• {{ item.name }} × {{ item.quantity }} = {{ item.subtotal }} AZN
+{% endfor %}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÇATDIRILMA MƏLUMATLARI
+
+Ünvan: {{ order.street }}, {{ order.building }}
+        {{ order.city }}
+Əlaqə: {{ order.phone }}
+Təxmini çatdırılma: {{ order.estimated_delivery|date:"d F Y" }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Sifarişiniz barədə yenilik olduqda sizə məlumat veriləcək.
+
+Əlaqə üçün: {{ support_email }}
+
+Təşəkkürlər,
+{{ site_name }}
