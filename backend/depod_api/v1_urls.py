@@ -21,4 +21,6 @@ urlpatterns = [
     path('', include('cms.urls')),
     # Reviews endpoints
     path('', include('reviews.urls')),
+    # Payments endpoints
+    path('', include('payments.urls')),
 ]

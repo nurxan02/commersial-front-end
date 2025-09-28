@@ -38,13 +38,15 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     main_image = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
+    # Add camelCase field for frontend compatibility
+    studentDiscount = serializers.IntegerField(source='student_discount', read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'category', 'description', 'images', 'main_image',
             'specs', 'features', 'highlights', 'price', 'discounted_price',
-            'discount', 'student_discount', 'in_stock', 'stock'
+            'discount', 'student_discount', 'studentDiscount', 'in_stock', 'stock'
         ]
 
     def get_main_image(self, obj):
@@ -68,6 +70,9 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductPricingSerializer(serializers.ModelSerializer):
+    # Add camelCase field for frontend compatibility
+    studentDiscount = serializers.IntegerField(source='student_discount', read_only=True)
+    
     class Meta:
         model = Product
-        fields = ['price', 'discounted_price', 'discount', 'student_discount', 'in_stock']
+        fields = ['price', 'discounted_price', 'discount', 'student_discount', 'studentDiscount', 'in_stock']

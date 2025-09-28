@@ -47,16 +47,40 @@ class OrderViewSet(viewsets.ModelViewSet):
 
             # Server recompute unit price
             price = Decimal(product.price)
+            original_price = price
+            discount_applied = None
+            student_discount_applied = None
+            
+            # Apply product discount first
             if product.discount and product.discounted_price:
                 price = Decimal(product.discounted_price)
+                discount_applied = product.discount
 
             # Student pricing if user approved
             if request.user.student_status == 'approved' and product.student_discount:
                 price = (price * (Decimal('1.00') - Decimal(product.student_discount) / Decimal('100'))).quantize(Decimal('0.01'))
+                student_discount_applied = product.student_discount
 
             unit_price = price
             subtotal = (unit_price * quantity).quantize(Decimal('0.01'))
             total_price = subtotal
+
+            # Enhanced pricing snapshot to include discount details
+            enhanced_snapshot = {
+                'original_price': float(original_price),
+                'final_unit_price': float(unit_price),
+                'product_discount': discount_applied,
+                'student_discount_applied': student_discount_applied,
+                'user_student_status': request.user.student_status,
+                'quantity': quantity,
+                'subtotal': float(subtotal),
+                'total': float(total_price),
+                'timestamp': timezone.now().isoformat(),
+            }
+            
+            # Merge with any frontend snapshot
+            if pricing_snapshot:
+                enhanced_snapshot.update(pricing_snapshot)
 
             # If stock tracking enabled, validate and deduct
             if product.stock is not None:
@@ -77,7 +101,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status='pending',
                 total_price=total_price,
                 estimated_delivery=timezone.now() + timedelta(days=3),
-                pricing_snapshot=pricing_snapshot or None,
+                pricing_snapshot=enhanced_snapshot,
             )
 
             # pick main image URL

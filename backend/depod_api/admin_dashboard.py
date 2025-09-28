@@ -14,14 +14,17 @@ import json
 
 @staff_member_required
 def monthly_profit_data(request):
-    """Monthly profit chart data (price - cost_price)."""
+    """Monthly profit chart data (price - cost_price) - only delivered orders."""
     # Get orders from last 12 months
     twelve_months_ago = timezone.now() - timedelta(days=365)
     
-    # Calculate monthly profit from order items
+    # Calculate monthly profit from order items - only delivered orders
     monthly_data = (
         OrderItem.objects
-        .filter(order__created_at__gte=twelve_months_ago)
+        .filter(
+            order__created_at__gte=twelve_months_ago,
+            order__status='delivered'
+        )
         .annotate(month=TruncMonth('order__created_at'))
         .values('month')
         .annotate(
@@ -55,28 +58,31 @@ def monthly_profit_data(request):
 
 @staff_member_required
 def sales_units_data(request):
-    """Daily, weekly, and monthly unit sales data."""
+    """Daily, weekly, and monthly unit sales data - only delivered orders."""
     now = timezone.now()
     
-    # Daily sales (today)
+    # Daily sales (today) - only delivered orders
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     daily_sales = OrderItem.objects.filter(
-        order__created_at__gte=today_start
+        order__created_at__gte=today_start,
+        order__status='delivered'
     ).aggregate(total=Sum('quantity'))['total'] or 0
     
-    # Weekly sales (last 7 days)
+    # Weekly sales (last 7 days) - only delivered orders
     week_start = now - timedelta(days=7)
     weekly_sales = OrderItem.objects.filter(
-        order__created_at__gte=week_start
+        order__created_at__gte=week_start,
+        order__status='delivered'
     ).aggregate(total=Sum('quantity'))['total'] or 0
     
-    # Monthly sales (last 30 days)
+    # Monthly sales (last 30 days) - only delivered orders
     month_start = now - timedelta(days=30)
     monthly_sales = OrderItem.objects.filter(
-        order__created_at__gte=month_start
+        order__created_at__gte=month_start,
+        order__status='delivered'
     ).aggregate(total=Sum('quantity'))['total'] or 0
     
-    # Daily chart data (last 7 days)
+    # Daily chart data (last 7 days) - only delivered orders
     daily_chart_data = []
     daily_labels = []
     
@@ -87,7 +93,8 @@ def sales_units_data(request):
         
         day_sales = OrderItem.objects.filter(
             order__created_at__gte=day_start,
-            order__created_at__lt=day_end
+            order__created_at__lt=day_end,
+            order__status='delivered'
         ).aggregate(total=Sum('quantity'))['total'] or 0
         
         daily_chart_data.append(day_sales)
@@ -112,10 +119,11 @@ def sales_units_data(request):
 
 @staff_member_required
 def category_distribution_data(request):
-    """Category distribution pie chart data."""
-    # Get sales by category
+    """Category distribution pie chart data - only delivered orders."""
+    # Get sales by category - only delivered orders
     category_data = (
         OrderItem.objects
+        .filter(order__status='delivered')
         .values('product__category__name')
         .annotate(total_quantity=Sum('quantity'))
         .order_by('-total_quantity')
@@ -170,21 +178,24 @@ def recent_orders_data(request):
 
 @staff_member_required
 def revenue_widget_data(request):
-    """Total revenue widget data."""
-    # Calculate total revenue from all orders
-    total_revenue = Order.objects.aggregate(
-        total=Sum('total_price')
-    )['total'] or 0
-    
-    # Revenue from last 30 days
-    thirty_days_ago = timezone.now() - timedelta(days=30)
-    recent_revenue = Order.objects.filter(
-        created_at__gte=thirty_days_ago
+    """Total revenue widget data - only delivered orders."""
+    # Calculate total revenue from delivered orders only
+    total_revenue = Order.objects.filter(
+        status='delivered'
     ).aggregate(
         total=Sum('total_price')
     )['total'] or 0
     
-    # Get revenue trend data for last 7 days
+    # Revenue from last 30 days - only delivered orders
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    recent_revenue = Order.objects.filter(
+        created_at__gte=thirty_days_ago,
+        status='delivered'
+    ).aggregate(
+        total=Sum('total_price')
+    )['total'] or 0
+    
+    # Get revenue trend data for last 7 days - only delivered orders
     now = timezone.now()
     revenue_trend_data = []
     revenue_trend_labels = []
@@ -196,7 +207,8 @@ def revenue_widget_data(request):
         
         day_revenue = Order.objects.filter(
             created_at__gte=day_start,
-            created_at__lt=day_end
+            created_at__lt=day_end,
+            status='delivered'
         ).aggregate(
             total=Sum('total_price')
         )['total'] or 0
@@ -217,23 +229,26 @@ def revenue_widget_data(request):
 
 @staff_member_required
 def profit_widget_data(request):
-    """Total profit widget data (price - cost_price)."""
+    """Total profit widget data (price - cost_price) - only delivered orders."""
     from django.db.models import F
     
-    # Calculate total profit from all order items
-    total_profit = OrderItem.objects.aggregate(
-        total=Sum(F('subtotal') - (F('quantity') * F('product__cost_price')))
-    )['total'] or 0
-    
-    # Profit from last 30 days
-    thirty_days_ago = timezone.now() - timedelta(days=30)
-    recent_profit = OrderItem.objects.filter(
-        order__created_at__gte=thirty_days_ago
+    # Calculate total profit from delivered order items only
+    total_profit = OrderItem.objects.filter(
+        order__status='delivered'
     ).aggregate(
         total=Sum(F('subtotal') - (F('quantity') * F('product__cost_price')))
     )['total'] or 0
     
-    # Get profit trend data for last 7 days
+    # Profit from last 30 days - only delivered orders
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    recent_profit = OrderItem.objects.filter(
+        order__created_at__gte=thirty_days_ago,
+        order__status='delivered'
+    ).aggregate(
+        total=Sum(F('subtotal') - (F('quantity') * F('product__cost_price')))
+    )['total'] or 0
+    
+    # Get profit trend data for last 7 days - only delivered orders
     now = timezone.now()
     profit_trend_data = []
     profit_trend_labels = []
@@ -245,7 +260,8 @@ def profit_widget_data(request):
         
         day_profit = OrderItem.objects.filter(
             order__created_at__gte=day_start,
-            order__created_at__lt=day_end
+            order__created_at__lt=day_end,
+            order__status='delivered'
         ).aggregate(
             total=Sum(F('subtotal') - (F('quantity') * F('product__cost_price')))
         )['total'] or 0

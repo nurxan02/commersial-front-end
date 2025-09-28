@@ -21,48 +21,49 @@ function getUserStudentStatus() {
   } catch (e) {
     return null;
   }
+
 }
 
-function calculateStudentPrice(originalPrice, studentDiscount) {
-  return originalPrice * (1 - studentDiscount / 100);
-}
+  function calculateStudentPrice(originalPrice, studentDiscount) {
+    return originalPrice * (1 - studentDiscount / 100);
+  }
 
-// Numeric safety helpers
-function toNum(v) {
-  if (v === null || v === undefined || v === "") return NaN;
-  const n = typeof v === "number" ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : NaN;
-}
-function isNum(v) {
-  return typeof v === "number" && Number.isFinite(v);
-}
-function safeFixed(v, digits) {
-  const n = toNum(v);
-  return Number.isFinite(n) ? n.toFixed(digits) : "";
-}
+  // Numeric safety helpers
+  function toNum(v) {
+    if (v === null || v === undefined || v === "") return NaN;
+    const n = typeof v === "number" ? v : parseFloat(v);
+    return Number.isFinite(n) ? n : NaN;
+  }
+  function isNum(v) {
+    return typeof v === "number" && Number.isFinite(v);
+  }
+  function safeFixed(v, digits) {
+    const n = toNum(v);
+    return Number.isFinite(n) ? n.toFixed(digits) : "";
+  }
 
-function createPriceHTML(product) {
-  const isStudent = getUserStudentStatus() === "approved";
-  let priceHTML = "";
+  function createPriceHTML(product) {
+    const isStudent = getUserStudentStatus() === "approved";
+    let priceHTML = "";
 
-  const price = toNum(product.price);
-  const discounted = toNum(product.discountedPrice);
-  const discountPct = toNum(product.discount);
-  const studentPct = toNum(product.studentDiscount);
+    const price = toNum(product.price);
+    const discounted = toNum(product.discountedPrice);
+    const discountPct = toNum(product.discount);
+    const studentPct = toNum(product.studentDiscount);
 
-  const hasGeneralDiscount =
-    isNum(discounted) && (isNum(price) ? discounted < price : true);
+    const hasGeneralDiscount =
+      isNum(discounted) && (isNum(price) ? discounted < price : true);
 
-  const computeStudent = (val) =>
-    isNum(val) && isNum(studentPct) && studentPct > 0
-      ? val * (1 - studentPct / 100)
-      : val;
+    const computeStudent = (val) =>
+      isNum(val) && isNum(studentPct) && studentPct > 0
+        ? val * (1 - studentPct / 100)
+        : val;
 
-  if (hasGeneralDiscount) {
-    const base = discounted;
-    const current = isStudent ? computeStudent(base) : base;
+    if (hasGeneralDiscount) {
+      const base = discounted;
+      const current = isStudent ? computeStudent(base) : base;
 
-    priceHTML = `
+      priceHTML = `
       <div class="product-price-detail">
         <div class="price-row">
           <span class="price-current">${safeFixed(current, 2)} ₼</span>
@@ -100,11 +101,11 @@ function createPriceHTML(product) {
         </span>
       </div>
     `;
-  } else {
-    const base = isNum(price) ? price : discounted; // fallback if only one is available
-    const current = isStudent ? computeStudent(base) : base;
+    } else {
+      const base = isNum(price) ? price : discounted; // fallback if only one is available
+      const current = isStudent ? computeStudent(base) : base;
 
-    priceHTML = `
+      priceHTML = `
       <div class="product-price-detail">
         <div class="price-row">
           <span class="price-current">${safeFixed(current, 2)} ₼</span>
@@ -136,26 +137,17 @@ function createPriceHTML(product) {
         </span>
       </div>
     `;
+    }
+
+    return priceHTML;
   }
 
-  return priceHTML;
-}
-
-// Import products data from products.js
-async function getProductById(productId) {
-  if (typeof PRODUCTS === "undefined") {
-    console.error(
-      "PRODUCTS is not defined. Make sure products.js is loaded first."
-    );
-    return null;
-  }
-  try {
-    if (window.API) {
-      // reuse map from products.js by calling global function if present
-      if (typeof window.getProductById === "function") {
-        // avoid recursion; call API directly instead
+  // Import products data from products.js
+  async function getProductById(productId) {
+    // 1) Prefer backend API when available
+    try {
+      if (window.API && typeof window.API.getProduct === "function") {
         const p = await window.API.getProduct(productId);
-        // inline a small mapper (duplicated minimal) to avoid circular import
         // Try to enrich with pricing if not present
         let pricing = null;
         if (
@@ -222,124 +214,135 @@ async function getProductById(productId) {
           stock: typeof p.stock === "number" ? p.stock : null,
         };
       }
+    } catch (e) {
+      console.warn(
+        "API getProduct failed, will try local PRODUCTS:",
+        e.message
+      );
     }
-  } catch (e) {
-    console.warn("API getProduct failed, using local data:", e.message);
-  }
-  return PRODUCTS[productId] || null;
-}
 
-async function getAllProducts() {
-  if (typeof PRODUCTS === "undefined") {
-    console.error(
-      "PRODUCTS is not defined. Make sure products.js is loaded first."
-    );
-    return [];
-  }
-  try {
-    if (window.API) {
-      const list = await window.API.listProducts();
-      return list.map((p) => ({
-        id: p.id,
-        name: p.name,
-        category: p.category,
-        images: {
-          main:
-            p.main_image ||
-            (p.images && p.images.find((i) => i.is_main)?.image) ||
-            "",
-          gallery: Array.isArray(p.images) ? p.images.map((i) => i.image) : [],
-        },
-        description: p.description || "",
-        features: Array.isArray(p.features)
-          ? p.features.map((f) => f.text)
-          : [],
-        specs: Array.isArray(p.specs)
-          ? p.specs.reduce((acc, s) => {
-              acc[s.label] = s.value;
-              return acc;
-            }, {})
-          : {},
-        highlights: Array.isArray(p.highlights)
-          ? p.highlights.map((h) => ({ number: h.number, text: h.text }))
-          : [],
-      }));
+    // 2) Fallback to local PRODUCTS map if available
+    if (typeof PRODUCTS !== "undefined") {
+      return PRODUCTS[productId] || null;
     }
-  } catch (e) {
-    console.warn("API listProducts failed, using local data:", e.message);
-  }
-  return Object.values(PRODUCTS);
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  if (window.location.pathname.includes("product-detail.html")) {
-    initProductDetailPage();
-  }
-});
-
-async function initProductDetailPage() {
-  // Get product ID from URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get("id");
-
-  if (!productId) {
-    window.location.href = "products.html";
-    return;
+    return null;
   }
 
-  // Get product data
-  const product = await getProductById(productId);
-  if (!product) {
-    window.location.href = "products.html";
-    return;
-  }
-
-  // Populate product data
-  populateProductData(product);
-  setupTabs();
-  setupImageGallery();
-  loadRelatedProducts(product.category, product.id);
-
-  // Load product reviews
-  loadReviews(productId);
-}
-
-function populateProductData(product) {
-  // Store current product globally
-  currentProduct = product;
-
-  // Update page title
-  document.title = `${product.name} - Depod`;
-  document.getElementById("pageTitle").textContent = `${product.name} - Depod`;
-
-  // Populate breadcrumb
-  const breadcrumb = document.getElementById("breadcrumb");
-  const categoryName = (function () {
-    if (typeof getCategoryName === "function") {
-      return getCategoryName(product.category);
+  async function getAllProducts() {
+    if (typeof PRODUCTS === "undefined") {
+      console.error(
+        "PRODUCTS is not defined. Make sure products.js is loaded first."
+      );
+      return [];
     }
-    // minimal inline fallback using global map or plain text
-    if (
-      product &&
-      typeof product.category === "object" &&
-      product.category.name
-    ) {
-      return product.category.name;
+    try {
+      if (window.API) {
+        const list = await window.API.listProducts();
+        return list.map((p) => ({
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          images: {
+            main:
+              p.main_image ||
+              (p.images && p.images.find((i) => i.is_main)?.image) ||
+              "",
+            gallery: Array.isArray(p.images)
+              ? p.images.map((i) => i.image)
+              : [],
+          },
+          description: p.description || "",
+          features: Array.isArray(p.features)
+            ? p.features.map((f) => f.text)
+            : [],
+          specs: Array.isArray(p.specs)
+            ? p.specs.reduce((acc, s) => {
+                acc[s.label] = s.value;
+                return acc;
+              }, {})
+            : {},
+          highlights: Array.isArray(p.highlights)
+            ? p.highlights.map((h) => ({ number: h.number, text: h.text }))
+            : [],
+        }));
+      }
+    } catch (e) {
+      console.warn("API listProducts failed, using local data:", e.message);
     }
-    if (window.CATEGORY_NAME_MAP && typeof product.category === "string") {
-      return window.CATEGORY_NAME_MAP[product.category] || product.category;
-    }
-    return typeof product.category === "string"
-      ? product.category
-      : product.category?.key || "Kategoriya";
-  })();
-  const categoryKeyForLink = (function () {
-    const c = product.category;
-    if (c && typeof c === "object") return c.key || c.id || "";
-    return c || "";
-  })();
+    return Object.values(PRODUCTS);
+  }
 
-  breadcrumb.innerHTML = `
+  document.addEventListener("DOMContentLoaded", function () {
+    if (window.location.pathname.includes("product-detail.html")) {
+      initProductDetailPage();
+    }
+  });
+
+  async function initProductDetailPage() {
+    // Get product ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get("id");
+
+    if (!productId) {
+      window.location.href = "products.html";
+      return;
+    }
+
+    // Get product data
+    const product = await getProductById(productId);
+    if (!product) {
+      window.location.href = "products.html";
+      return;
+    }
+
+    // Populate product data
+    populateProductData(product);
+    setupTabs();
+    setupImageGallery();
+    loadRelatedProducts(product.category, product.id);
+
+    // Load product reviews
+    loadReviews(productId);
+  }
+
+  function populateProductData(product) {
+    // Store current product globally
+    currentProduct = product;
+
+    // Update page title
+    document.title = `${product.name} - Depod`;
+    document.getElementById(
+      "pageTitle"
+    ).textContent = `${product.name} - Depod`;
+
+    // Populate breadcrumb
+    const breadcrumb = document.getElementById("breadcrumb");
+    const categoryName = (function () {
+      if (typeof getCategoryName === "function") {
+        return getCategoryName(product.category);
+      }
+      // minimal inline fallback using global map or plain text
+      if (
+        product &&
+        typeof product.category === "object" &&
+        product.category.name
+      ) {
+        return product.category.name;
+      }
+      if (window.CATEGORY_NAME_MAP && typeof product.category === "string") {
+        return window.CATEGORY_NAME_MAP[product.category] || product.category;
+      }
+      return typeof product.category === "string"
+        ? product.category
+        : product.category?.key || "Kategoriya";
+    })();
+    const categoryKeyForLink = (function () {
+      const c = product.category;
+      if (c && typeof c === "object") return c.key || c.id || "";
+      return c || "";
+    })();
+
+    breadcrumb.innerHTML = `
         <a href="index.html">Ana Səhifə</a>
         <span>/</span>
         <a href="products.html">Məhsullar</a>
@@ -347,220 +350,220 @@ function populateProductData(product) {
         <span class="active">${product.name}</span>
     `;
 
-  // Populate product name
-  document.getElementById("productName").textContent = product.name;
+    // Populate product name
+    document.getElementById("productName").textContent = product.name;
 
-  // Populate pricing
-  const productPricing = document.getElementById("productPricing");
-  if (productPricing) {
-    productPricing.innerHTML = createPriceHTML(product);
-  }
-
-  // Configure quantity bounds from stock
-  const qtyInput = document.getElementById("quantity");
-  const decBtn = document.getElementById("decreaseQty");
-  const incBtn = document.getElementById("increaseQty");
-  if (qtyInput) {
-    const min = 1;
-    let max = 10;
-    if (product.inStock && typeof product.stock === "number") {
-      max = Math.max(1, product.stock);
+    // Populate pricing
+    const productPricing = document.getElementById("productPricing");
+    if (productPricing) {
+      productPricing.innerHTML = createPriceHTML(product);
     }
-    if (!product.inStock) {
-      qtyInput.value = String(min);
-      qtyInput.disabled = true;
-      if (incBtn) incBtn.disabled = true;
-      if (decBtn) decBtn.disabled = true;
-    } else {
-      qtyInput.disabled = false;
-      qtyInput.min = String(min);
-      qtyInput.max = String(max);
-      const currentV = parseInt(qtyInput.value || String(min));
-      const bounded = isNaN(currentV)
-        ? min
-        : Math.max(min, Math.min(max, currentV));
-      qtyInput.value = String(bounded);
-      if (incBtn) incBtn.disabled = bounded >= max;
-      if (decBtn) decBtn.disabled = bounded <= min;
-      qtyInput.addEventListener("input", function () {
-        const maxNow = parseInt(qtyInput.max || "10");
-        let v = parseInt(qtyInput.value || "1");
-        if (isNaN(v)) v = min;
-        v = Math.max(min, Math.min(maxNow, v));
-        qtyInput.value = String(v);
-        if (incBtn) incBtn.disabled = v >= maxNow;
-        if (decBtn) decBtn.disabled = v <= min;
-      });
+
+    // Configure quantity bounds from stock
+    const qtyInput = document.getElementById("quantity");
+    const decBtn = document.getElementById("decreaseQty");
+    const incBtn = document.getElementById("increaseQty");
+    if (qtyInput) {
+      const min = 1;
+      let max = 10;
+      if (product.inStock && typeof product.stock === "number") {
+        max = Math.max(1, product.stock);
+      }
+      if (!product.inStock) {
+        qtyInput.value = String(min);
+        qtyInput.disabled = true;
+        if (incBtn) incBtn.disabled = true;
+        if (decBtn) decBtn.disabled = true;
+      } else {
+        qtyInput.disabled = false;
+        qtyInput.min = String(min);
+        qtyInput.max = String(max);
+        const currentV = parseInt(qtyInput.value || String(min));
+        const bounded = isNaN(currentV)
+          ? min
+          : Math.max(min, Math.min(max, currentV));
+        qtyInput.value = String(bounded);
+        if (incBtn) incBtn.disabled = bounded >= max;
+        if (decBtn) decBtn.disabled = bounded <= min;
+        qtyInput.addEventListener("input", function () {
+          const maxNow = parseInt(qtyInput.max || "10");
+          let v = parseInt(qtyInput.value || "1");
+          if (isNaN(v)) v = min;
+          v = Math.max(min, Math.min(maxNow, v));
+          qtyInput.value = String(v);
+          if (incBtn) incBtn.disabled = v >= maxNow;
+          if (decBtn) decBtn.disabled = v <= min;
+        });
+      }
     }
-  }
 
-  // Update Buy Now button based on stock
-  const buyNowBtn = document.getElementById("buyNowBtn");
-  if (buyNowBtn) {
-    buyNowBtn.disabled = !product.inStock;
-    if (!product.inStock) {
-      buyNowBtn.innerHTML = '<i class="fas fa-ban"></i> Stokda Yoxdur';
+    // Update Buy Now button based on stock
+    const buyNowBtn = document.getElementById("buyNowBtn");
+    if (buyNowBtn) {
+      buyNowBtn.disabled = !product.inStock;
+      if (!product.inStock) {
+        buyNowBtn.innerHTML = '<i class="fas fa-ban"></i> Stokda Yoxdur';
+      }
     }
-  }
 
-  // Populate main image
-  const mainImage = document.getElementById("mainProductImage");
-  mainImage.src = product.images.main;
-  mainImage.alt = product.name;
+    // Populate main image
+    const mainImage = document.getElementById("mainProductImage");
+    mainImage.src = product.images.main;
+    mainImage.alt = product.name;
 
-  // Populate thumbnails
-  const thumbnails = document.getElementById("productThumbnails");
-  thumbnails.innerHTML = product.images.gallery
-    .map(
-      (image, index) => `
+    // Populate thumbnails
+    const thumbnails = document.getElementById("productThumbnails");
+    thumbnails.innerHTML = product.images.gallery
+      .map(
+        (image, index) => `
         <img src="${image}" alt="${product.name} ${index + 1}" 
              class="thumbnail ${index === 0 ? "active" : ""}" 
              onclick="changeMainImage('${image}', this)">
     `
-    )
-    .join("");
+      )
+      .join("");
 
-  // Populate highlights
-  const highlights = document.getElementById("productHighlights");
-  highlights.innerHTML = product.highlights
-    .map(
-      (highlight) => `
+    // Populate highlights
+    const highlights = document.getElementById("productHighlights");
+    highlights.innerHTML = product.highlights
+      .map(
+        (highlight) => `
         <div class="highlight-badge">
             <span class="highlight-number">${highlight.number}</span>
             <span class="highlight-text">${highlight.text}</span>
         </div>
     `
-    )
-    .join("");
+      )
+      .join("");
 
-  // Populate description
-  const descEl = document.getElementById("productDescription");
-  const detailedEl = document.getElementById("detailedDescription");
-  if (descEl && typeof product.description === "string") {
-    descEl.innerHTML = product.description;
-  }
-  if (detailedEl && typeof product.description === "string") {
-    detailedEl.innerHTML = product.description;
-  }
+    // Populate description
+    const descEl = document.getElementById("productDescription");
+    const detailedEl = document.getElementById("detailedDescription");
+    if (descEl && typeof product.description === "string") {
+      descEl.innerHTML = product.description;
+    }
+    if (detailedEl && typeof product.description === "string") {
+      detailedEl.innerHTML = product.description;
+    }
 
-  // Populate features
-  const featuresList = document.getElementById("productFeatures");
-  featuresList.innerHTML = product.features
-    .map(
-      (feature) => `
+    // Populate features
+    const featuresList = document.getElementById("productFeatures");
+    featuresList.innerHTML = product.features
+      .map(
+        (feature) => `
         <li><span class="feature-checkmark">✓</span> ${feature}</li>
     `
-    )
-    .join("");
+      )
+      .join("");
 
-  // Populate features grid for overview tab
-  const featuresGrid = document.getElementById("featuresGrid");
+    // Populate features grid for overview tab
+    const featuresGrid = document.getElementById("featuresGrid");
 
-  // Define feature icons mapping
-  const featureIcons = {
-    "24 saat batareya ömrü": "fa-solid fa-battery-full",
-    "28 saat batareya ömrü": "fa-solid fa-battery-full",
-    "20 saat batareya ömrü": "fa-solid fa-battery-full",
-    "Bluetooth 5.0 texnologiyası": "fab fa-bluetooth-b",
-    "IPX4 su davamlılığı": "fas fa-tint",
-    "IPX5 su davamlılığı": "fas fa-tint",
-    "Active noise cancellation": "fas fa-volume-mute",
-    "Noise cancellation": "fas fa-volume-mute",
-    "Ambient ses rejimi": "fas fa-volume-up",
-    "Touch control": "fas fa-hand-pointer",
-    "Wireless charging": "fas fa-charging-station",
-    "Sürətli şarj": "fas fa-bolt",
-    "15W sürətli şarj": "fas fa-bolt",
-    "15W maksimum güc": "fas fa-bolt",
-    "20W maksimum güc": "fas fa-bolt",
-    "10000mAh tutum": "fas fa-battery-three-quarters",
-    "USB-C və Lightning": "fas fa-plug",
-    "LED göstərici": "fas fa-lightbulb",
-    "LED ekran": "fas fa-lightbulb",
-    "Kompakt dizayn": "fas fa-mobile-alt",
-    "Çoxlu cihaz dəstəyi": "fas fa-tablets",
-    "Universal uyğunluq": "fas fa-plug",
-    "Qorunma sistemi": "fas fa-shield-alt",
-    "Təhlükəsizlik sistemi": "fas fa-shield-alt",
-    "İkili USB port": "fa-brands fa-usb",
-    "Çoxlu port dəstəyi": "fa-brands fa-usb",
-    "USB Type-C port": "fa-brands fa-usb",
-    "LED indikator": "fas fa-lightbulb",
-    "Orijinal dizayn": "fa-solid fa-star",
-    "Auto pairing": "fa-solid fa-link",
-    "Ergonomik dizayn": "fa-solid fa-heart",
-  };
+    // Define feature icons mapping
+    const featureIcons = {
+      "24 saat batareya ömrü": "fa-solid fa-battery-full",
+      "28 saat batareya ömrü": "fa-solid fa-battery-full",
+      "20 saat batareya ömrü": "fa-solid fa-battery-full",
+      "Bluetooth 5.0 texnologiyası": "fab fa-bluetooth-b",
+      "IPX4 su davamlılığı": "fas fa-tint",
+      "IPX5 su davamlılığı": "fas fa-tint",
+      "Active noise cancellation": "fas fa-volume-mute",
+      "Noise cancellation": "fas fa-volume-mute",
+      "Ambient ses rejimi": "fas fa-volume-up",
+      "Touch control": "fas fa-hand-pointer",
+      "Wireless charging": "fas fa-charging-station",
+      "Sürətli şarj": "fas fa-bolt",
+      "15W sürətli şarj": "fas fa-bolt",
+      "15W maksimum güc": "fas fa-bolt",
+      "20W maksimum güc": "fas fa-bolt",
+      "10000mAh tutum": "fas fa-battery-three-quarters",
+      "USB-C və Lightning": "fas fa-plug",
+      "LED göstərici": "fas fa-lightbulb",
+      "LED ekran": "fas fa-lightbulb",
+      "Kompakt dizayn": "fas fa-mobile-alt",
+      "Çoxlu cihaz dəstəyi": "fas fa-tablets",
+      "Universal uyğunluq": "fas fa-plug",
+      "Qorunma sistemi": "fas fa-shield-alt",
+      "Təhlükəsizlik sistemi": "fas fa-shield-alt",
+      "İkili USB port": "fa-brands fa-usb",
+      "Çoxlu port dəstəyi": "fa-brands fa-usb",
+      "USB Type-C port": "fa-brands fa-usb",
+      "LED indikator": "fas fa-lightbulb",
+      "Orijinal dizayn": "fa-solid fa-star",
+      "Auto pairing": "fa-solid fa-link",
+      "Ergonomik dizayn": "fa-solid fa-heart",
+    };
 
-  featuresGrid.innerHTML = product.features
-    .map((feature) => {
-      const iconClass = featureIcons[feature] || "fas fa-check";
-      return `
+    featuresGrid.innerHTML = product.features
+      .map((feature) => {
+        const iconClass = featureIcons[feature] || "fas fa-check";
+        return `
         <div class="feature-card">
             <span class="feature-text">${feature}</span>
             <div class="feature-icon"><i class="${iconClass}"></i></div>
         </div>
         `;
-    })
-    .join("");
+      })
+      .join("");
 
-  // Populate specs
-  const specsTable = document.getElementById("specsTable");
-  specsTable.innerHTML = Object.entries(product.specs)
-    .map(
-      ([key, value]) => `
+    // Populate specs
+    const specsTable = document.getElementById("specsTable");
+    specsTable.innerHTML = Object.entries(product.specs)
+      .map(
+        ([key, value]) => `
         <div class="spec-row">
             <span class="spec-label">${key}</span>
             <span class="spec-value">${value}</span>
         </div>
     `
-    )
-    .join("");
+      )
+      .join("");
 
-  // Load related products
-  loadRelatedProducts(
-    typeof product.category === "object"
-      ? product.category.key || product.category.id
-      : product.category,
-    product.id
-  );
-}
-
-async function loadRelatedProducts(category, currentProductId) {
-  const relatedProductsGrid = document.getElementById("relatedProducts");
-  if (!relatedProductsGrid) return;
-
-  // Prefer category-scoped fetch; fallback to all products
-  let list = [];
-  try {
-    if (typeof getProductsByCategory === "function") {
-      list = await getProductsByCategory(category);
-    } else {
-      list = await getAllProducts();
-    }
-  } catch (e) {
-    list = await getAllProducts();
+    // Load related products
+    loadRelatedProducts(
+      typeof product.category === "object"
+        ? product.category.key || product.category.id
+        : product.category,
+      product.id
+    );
   }
 
-  const catKey =
-    typeof category === "object" ? category.key || category.id : category;
-  const relatedProducts = list
-    .filter(
-      (p) =>
-        (typeof p.category === "object"
-          ? p.category.key || p.category.id
-          : p.category) === catKey && p.id !== currentProductId
-    )
-    .slice(0, 4);
+  async function loadRelatedProducts(category, currentProductId) {
+    const relatedProductsGrid = document.getElementById("relatedProducts");
+    if (!relatedProductsGrid) return;
 
-  relatedProductsGrid.innerHTML = relatedProducts
-    .map(
-      (product) => `
+    // Prefer category-scoped fetch; fallback to all products
+    let list = [];
+    try {
+      if (typeof getProductsByCategory === "function") {
+        list = await getProductsByCategory(category);
+      } else {
+        list = await getAllProducts();
+      }
+    } catch (e) {
+      list = await getAllProducts();
+    }
+
+    const catKey =
+      typeof category === "object" ? category.key || category.id : category;
+    const relatedProducts = list
+      .filter(
+        (p) =>
+          (typeof p.category === "object"
+            ? p.category.key || p.category.id
+            : p.category) === catKey && p.id !== currentProductId
+      )
+      .slice(0, 4);
+
+    relatedProductsGrid.innerHTML = relatedProducts
+      .map(
+        (product) => `
         <div class="related-product-card">
            
             <div class="related-product-image">
                 <img src="${product.images.main}" alt="${
-        product.name
-      }" loading="lazy">
+          product.name
+        }" loading="lazy">
             </div>
             <div class="related-product-info">
                             <div class="product-category">${getCategoryName(
@@ -574,317 +577,329 @@ async function loadRelatedProducts(category, currentProductId) {
             </div>
         </div>
     `
-    )
-    .join("");
-}
+      )
+      .join("");
+  }
 
-function setupTabs() {
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  const tabPanels = document.querySelectorAll(".tab-panel");
+  function setupTabs() {
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    const tabPanels = document.querySelectorAll(".tab-panel");
 
-  tabBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const targetTab = btn.getAttribute("data-tab");
+    tabBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetTab = btn.getAttribute("data-tab");
 
-      // Remove active class from all tabs and panels
-      tabBtns.forEach((b) => b.classList.remove("active"));
-      tabPanels.forEach((p) => p.classList.remove("active"));
+        // Remove active class from all tabs and panels
+        tabBtns.forEach((b) => b.classList.remove("active"));
+        tabPanels.forEach((p) => p.classList.remove("active"));
 
-      // Add active class to clicked tab and corresponding panel
-      btn.classList.add("active");
-      document.getElementById(targetTab).classList.add("active");
+        // Add active class to clicked tab and corresponding panel
+        btn.classList.add("active");
+        document.getElementById(targetTab).classList.add("active");
+      });
     });
-  });
-}
-
-function setupImageGallery() {
-  // Image gallery is already set up in populateProductData
-  // This function can be extended for advanced gallery features
-}
-
-function changeMainImage(imageSrc, thumbnailElement) {
-  // Update main image
-  document.getElementById("mainProductImage").src = imageSrc;
-
-  // Update active thumbnail
-  const thumbnails = document.querySelectorAll(".thumbnail");
-  thumbnails.forEach((thumb) => thumb.classList.remove("active"));
-  thumbnailElement.classList.add("active");
-}
-
-// (Removed duplicate loadRelatedProducts definition)
-
-// Quantity controls
-function increaseQuantity() {
-  const quantityInput = document.getElementById("quantity");
-  const currentValue = parseInt(quantityInput.value);
-  const maxValue = parseInt(quantityInput.max);
-
-  if (currentValue < maxValue) {
-    quantityInput.value = currentValue + 1;
-  }
-}
-
-function decreaseQuantity() {
-  const quantityInput = document.getElementById("quantity");
-  const currentValue = parseInt(quantityInput.value);
-  const minValue = parseInt(quantityInput.min);
-
-  if (currentValue > minValue) {
-    quantityInput.value = currentValue - 1;
-  }
-}
-
-// Cart functions (placeholder for e-commerce functionality)
-function addToCart() {
-  const quantity = parseInt(document.getElementById("quantity").value);
-  const productId = new URLSearchParams(window.location.search).get("id");
-  const product = getProductById(productId);
-
-  // Simulate adding to cart
-  showNotification(
-    `${product.name} səbətə əlavə edildi! Miqdar: ${quantity}`,
-    "success"
-  );
-
-  // Here you would typically:
-  // 1. Add to localStorage cart
-  // 2. Update cart UI
-  // 3. Send to backend if available
-}
-
-// Quantity control functions
-function changeQuantity(delta) {
-  const quantityInput = document.getElementById("quantity");
-  const currentValue = parseInt(quantityInput.value);
-  const newValue = currentValue + delta;
-
-  // Validate bounds
-  const min = parseInt(quantityInput.min) || 1;
-  const max = parseInt(quantityInput.max) || 10;
-
-  if (newValue >= min && newValue <= max) {
-    quantityInput.value = newValue;
-
-    // Update button states
-    document.getElementById("decreaseQty").disabled = newValue <= min;
-    document.getElementById("increaseQty").disabled = newValue >= max;
-  }
-}
-
-// Product action functions
-function buyNow() {
-  const quantity = parseInt(document.getElementById("quantity").value);
-  const productId = new URLSearchParams(window.location.search).get("id");
-
-  // Check if user is logged in
-  const userData = localStorage.getItem("depod_user");
-  if (!userData) {
-    showNotification("Satın almaq üçün hesabınıza daxil olun!", "error");
-    setTimeout(() => {
-      window.location.href =
-        "login.html?redirect=" + encodeURIComponent(window.location.href);
-    }, 2000);
-    return;
   }
 
-  // Create order
-  createOrder(productId, quantity);
-}
+  function setupImageGallery() {
+    // Image gallery is already set up in populateProductData
+    // This function can be extended for advanced gallery features
+  }
 
-function sendOffer() {
-  // Redirect to contact page with product info
-  const productId = new URLSearchParams(window.location.search).get("id");
-  window.location.href = `contact.html?product=${productId}&type=offer`;
-}
+  function changeMainImage(imageSrc, thumbnailElement) {
+    // Update main image
+    document.getElementById("mainProductImage").src = imageSrc;
 
-function findStore() {
-  // Scroll to map or redirect to store finder
-  window.location.href = "contact.html#map";
-}
+    // Update active thumbnail
+    const thumbnails = document.querySelectorAll(".thumbnail");
+    thumbnails.forEach((thumb) => thumb.classList.remove("active"));
+    thumbnailElement.classList.add("active");
+  }
 
-// Order creation system
-async function createOrder(productId, quantity) {
-  try {
-    const userData = JSON.parse(localStorage.getItem("depod_user"));
-    const product = currentProduct; // From global scope
+  // (Removed duplicate loadRelatedProducts definition)
 
-    if (!product) {
-      showNotification("Məhsul məlumatı tapılmadı!", "error");
+  // Quantity controls
+  function increaseQuantity() {
+    const quantityInput = document.getElementById("quantity");
+    const currentValue = parseInt(quantityInput.value);
+    const maxValue = parseInt(quantityInput.max);
+
+    if (currentValue < maxValue) {
+      quantityInput.value = currentValue + 1;
+    }
+  }
+
+  function decreaseQuantity() {
+    const quantityInput = document.getElementById("quantity");
+    const currentValue = parseInt(quantityInput.value);
+    const minValue = parseInt(quantityInput.min);
+
+    if (currentValue > minValue) {
+      quantityInput.value = currentValue - 1;
+    }
+  }
+
+  // Cart functions (placeholder for e-commerce functionality)
+  function addToCart() {
+    const quantity = parseInt(document.getElementById("quantity").value);
+    const productId = new URLSearchParams(window.location.search).get("id");
+    const product = getProductById(productId);
+
+    // Simulate adding to cart
+    showNotification(
+      `${product.name} səbətə əlavə edildi! Miqdar: ${quantity}`,
+      "success"
+    );
+
+    // Here you would typically:
+    // 1. Add to localStorage cart
+    // 2. Update cart UI
+    // 3. Send to backend if available
+  }
+
+  // Quantity control functions
+  function changeQuantity(delta) {
+    const quantityInput = document.getElementById("quantity");
+    const currentValue = parseInt(quantityInput.value);
+    const newValue = currentValue + delta;
+
+    // Validate bounds
+    const min = parseInt(quantityInput.min) || 1;
+    const max = parseInt(quantityInput.max) || 10;
+
+    if (newValue >= min && newValue <= max) {
+      quantityInput.value = newValue;
+
+      // Update button states
+      document.getElementById("decreaseQty").disabled = newValue <= min;
+      document.getElementById("increaseQty").disabled = newValue >= max;
+    }
+  }
+
+  // Product action functions
+  function buyNow() {
+    const quantity = parseInt(document.getElementById("quantity").value);
+    const productId = new URLSearchParams(window.location.search).get("id");
+
+    // Check if user is logged in
+    const userData = localStorage.getItem("depod_user");
+    if (!userData) {
+      showNotification("Satın almaq üçün hesabınıza daxil olun!", "error");
+      setTimeout(() => {
+        window.location.href =
+          "login.html?redirect=" + encodeURIComponent(window.location.href);
+      }, 2000);
       return;
     }
 
-    // Check if user has delivery addresses
-    let defaultAddress = null;
+    // Create order
+    createOrder(productId, quantity);
+  }
+
+  function sendOffer() {
+    // Redirect to contact page with product info
+    const productId = new URLSearchParams(window.location.search).get("id");
+    window.location.href = `contact.html?product=${productId}&type=offer`;
+  }
+
+  function findStore() {
+    // Scroll to map or redirect to store finder
+    window.location.href = "contact.html#map";
+  }
+
+  // Order creation system
+  async function createOrder(productId, quantity) {
     try {
-      if (window.API?.getDeliveryAddresses) {
-        const addresses = await window.API.getDeliveryAddresses();
-        if (addresses.length === 0) {
-          showNotification(
-            "Çatdırılma adresi tapılmadı! Profildən adres əlavə edin.",
-            "error"
-          );
-          // Redirect to profile addresses tab
-          window.location.href = "profile.html?tab=delivery-addresses";
-          return;
-        }
-        // Find default address or use first one
-        defaultAddress =
-          addresses.find((addr) => addr.is_default) || addresses[0];
-      }
-    } catch (e) {
-      console.error("Error checking delivery addresses:", e);
-      showNotification(
-        "Çatdırılma adresi yoxlanılrkən xəta baş verdi",
-        "error"
-      );
-      return;
-    }
+      const userData = JSON.parse(localStorage.getItem("depod_user"));
+      const product = currentProduct; // From global scope
 
-    if (!defaultAddress) {
-      showNotification(
-        "Çatdırılma adresi seçilməmişdir! Profildən adres əlavə edin.",
-        "error"
-      );
-      window.location.href = "profile.html?tab=delivery-addresses";
-      return;
-    }
-
-    // Enforce live stock bounds before pricing
-    const maxQty =
-      product && typeof product.stock === "number" ? product.stock : null;
-    if (maxQty !== null && quantity > maxQty) {
-      showNotification(
-        `Maksimum ${maxQty} ədəd sifariş edə bilərsiniz`,
-        "error"
-      );
-      const qi = document.getElementById("quantity");
-      if (qi) qi.value = String(Math.max(1, maxQty));
-      return;
-    }
-
-    // Calculate total price
-    const isStudent = getUserStudentStatus() === "approved";
-    let unitPrice = isNum(toNum(product.discountedPrice))
-      ? toNum(product.discountedPrice)
-      : toNum(product.price);
-    if (
-      isNaN(unitPrice) &&
-      typeof window.API?.getProductPricing === "function"
-    ) {
-      try {
-        const pr = await window.API.getProductPricing(productId);
-        unitPrice = isNum(toNum(pr?.discounted_price))
-          ? toNum(pr.discounted_price)
-          : toNum(pr?.price);
-      } catch (_) {}
-    }
-    if (isStudent && isNum(toNum(product.studentDiscount))) {
-      unitPrice = calculateStudentPrice(
-        unitPrice,
-        toNum(product.studentDiscount)
-      );
-    }
-    const totalPrice = unitPrice * quantity;
-
-    // Try backend order creation first
-    let orderPayload = {
-      product_id: productId,
-      quantity,
-      delivery_address_id: defaultAddress.id,
-      pricing_snapshot: {
-        unit_price: unitPrice,
-        student_applied: isStudent,
-      },
-    };
-
-    let createdOrder = null;
-    if (window.API && typeof window.API.createOrder === "function") {
-      try {
-        createdOrder = await window.API.createOrder(orderPayload);
-      } catch (e) {
-        console.warn("Backend createOrder failed:", e.message);
-        // Check if it's a delivery address error
-        if (e.message.includes("delivery") || e.message.includes("address")) {
-          showNotification("Profildən çatdırılma adresi əlavə edin!", "error");
-          window.location.href = "profile.html?tab=delivery-addresses";
-          return;
-        }
-        // Try to refresh stock and inform the user
-        try {
-          const latest = await window.API.getProduct(productId);
-          if (latest && typeof latest.stock === "number") {
-            currentProduct.stock = latest.stock;
-            const qi = document.getElementById("quantity");
-            if (qi) {
-              qi.max = String(Math.max(1, latest.stock));
-              if (parseInt(qi.value) > latest.stock) {
-                qi.value = String(Math.max(1, latest.stock));
-              }
-            }
-            const buyNowBtn = document.getElementById("buyNowBtn");
-            if (buyNowBtn && latest.stock <= 0) {
-              buyNowBtn.disabled = true;
-              buyNowBtn.innerHTML = '<i class="fas fa-ban"></i> Stokda Yoxdur';
-            }
-            showNotification(
-              latest.stock <= 0
-                ? "Bu məhsul hazırda stokda yoxdur"
-                : `Yalnız ${latest.stock} ədəd mövcuddur`,
-              "error"
-            );
-            return;
-          }
-        } catch (_) {}
-        showNotification("Sifariş zamanı xəta baş verdi", "error");
+      if (!product) {
+        showNotification("Məhsul məlumatı tapılmadı!", "error");
         return;
       }
-    }
-    if (!createdOrder) {
-      // Do not simulate order when backend failed; notify user only
-      showNotification(
-        "Sifariş icra edilmədi. Zəhmət olmasa yenidən cəhd edin.",
-        "error"
-      );
-      return;
-    }
 
-    // If backend order created, shape minimal order for payment
-    const orderForPayment = {
-      id: createdOrder.id || generateOrderId(),
-      productId,
-      productName: product.name,
-      productImage: product.images.main,
-      quantity,
-      unitPrice,
-      totalPrice: createdOrder.total_price ?? totalPrice,
-      status: createdOrder.status || "pending",
-      createdAt: createdOrder.created_at || new Date().toISOString(),
-      estimatedDelivery:
-        createdOrder.estimated_delivery || getEstimatedDelivery(),
-    };
+      // Check if user has delivery addresses
+      let defaultAddress = null;
+      try {
+        if (window.API?.getDeliveryAddresses) {
+          const addresses = await window.API.getDeliveryAddresses();
+          if (addresses.length === 0) {
+            showNotification(
+              "Çatdırılma adresi tapılmadı! Profildən adres əlavə edin.",
+              "error"
+            );
+            // Redirect to profile addresses tab
+            window.location.href = "profile.html?tab=delivery-addresses";
+            return;
+          }
+          // Find default address or use first one
+          defaultAddress =
+            addresses.find((addr) => addr.is_default) || addresses[0];
+        }
+      } catch (e) {
+        console.error("Error checking delivery addresses:", e);
+        showNotification(
+          "Çatdırılma adresi yoxlanılrkən xəta baş verdi",
+          "error"
+        );
+        return;
+      }
 
-    // Optionally persist a light copy for UI badges
-    try {
-      const existingOrders = JSON.parse(
-        localStorage.getItem("depod_orders") || "[]"
-      );
-      existingOrders.push(orderForPayment);
-      localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
-    } catch (_) {}
+      if (!defaultAddress) {
+        showNotification(
+          "Çatdırılma adresi seçilməmişdir! Profildən adres əlavə edin.",
+          "error"
+        );
+        window.location.href = "profile.html?tab=delivery-addresses";
+        return;
+      }
 
-    // Redirect to success page (demo) or legacy simulated gateway
-    try {
-      window.location.href = `order-success.html?orderId=${orderForPayment.id}&status=confirmed`;
-      return;
-    } catch (_) {
-      initiatePayment(orderForPayment);
+      // Enforce live stock bounds before pricing
+      const maxQty =
+        product && typeof product.stock === "number" ? product.stock : null;
+      if (maxQty !== null && quantity > maxQty) {
+        showNotification(
+          `Maksimum ${maxQty} ədəd sifariş edə bilərsiniz`,
+          "error"
+        );
+        const qi = document.getElementById("quantity");
+        if (qi) qi.value = String(Math.max(1, maxQty));
+        return;
+      }
+
+      // Calculate total price
+      const isStudent = getUserStudentStatus() === "approved";
+      let unitPrice = isNum(toNum(product.discountedPrice))
+        ? toNum(product.discountedPrice)
+        : toNum(product.price);
+      if (
+        isNaN(unitPrice) &&
+        typeof window.API?.getProductPricing === "function"
+      ) {
+        try {
+          const pr = await window.API.getProductPricing(productId);
+          unitPrice = isNum(toNum(pr?.discounted_price))
+            ? toNum(pr.discounted_price)
+            : toNum(pr?.price);
+        } catch (_) {}
+      }
+      if (isStudent && isNum(toNum(product.studentDiscount))) {
+        unitPrice = calculateStudentPrice(
+          unitPrice,
+          toNum(product.studentDiscount)
+        );
+      }
+      const totalPrice = unitPrice * quantity;
+
+      // Try backend order creation first
+      let orderPayload = {
+        product_id: productId,
+        quantity,
+        delivery_address_id: defaultAddress.id,
+        pricing_snapshot: {
+          unit_price: unitPrice,
+          student_applied: isStudent,
+        },
+      };
+
+      let createdOrder = null;
+      if (window.API && typeof window.API.createOrder === "function") {
+        try {
+          createdOrder = await window.API.createOrder(orderPayload);
+        } catch (e) {
+          console.warn("Backend createOrder failed:", e.message);
+          // Check if it's a delivery address error
+          if (e.message.includes("delivery") || e.message.includes("address")) {
+            showNotification(
+              "Profildən çatdırılma adresi əlavə edin!",
+              "error"
+            );
+            window.location.href = "profile.html?tab=delivery-addresses";
+            return;
+          }
+          // Try to refresh stock and inform the user
+          try {
+            const latest = await window.API.getProduct(productId);
+            if (latest && typeof latest.stock === "number") {
+              currentProduct.stock = latest.stock;
+              const qi = document.getElementById("quantity");
+              if (qi) {
+                qi.max = String(Math.max(1, latest.stock));
+                if (parseInt(qi.value) > latest.stock) {
+                  qi.value = String(Math.max(1, latest.stock));
+                }
+              }
+              const buyNowBtn = document.getElementById("buyNowBtn");
+              if (buyNowBtn && latest.stock <= 0) {
+                buyNowBtn.disabled = true;
+                buyNowBtn.innerHTML =
+                  '<i class="fas fa-ban"></i> Stokda Yoxdur';
+              }
+              showNotification(
+                latest.stock <= 0
+                  ? "Bu məhsul hazırda stokda yoxdur"
+                  : `Yalnız ${latest.stock} ədəd mövcuddur`,
+                "error"
+              );
+              return;
+            }
+          } catch (_) {}
+          showNotification("Sifariş zamanı xəta baş verdi", "error");
+          return;
+        }
+      }
+      if (!createdOrder) {
+        // Do not simulate order when backend failed; notify user only
+        showNotification(
+          "Sifariş icra edilmədi. Zəhmət olmasa yenidən cəhd edin.",
+          "error"
+        );
+        return;
+      }
+
+      // If backend order created, shape minimal order for payment
+      const orderForPayment = {
+        id: createdOrder.id || generateOrderId(),
+        productId,
+        productName: product.name,
+        productImage: product.images.main,
+        quantity,
+        unitPrice,
+        totalPrice: createdOrder.total_price ?? totalPrice,
+        status: createdOrder.status || "pending",
+        createdAt: createdOrder.created_at || new Date().toISOString(),
+        estimatedDelivery:
+          createdOrder.estimated_delivery || getEstimatedDelivery(),
+      };
+
+      // Optionally persist a light copy for UI badges
+      try {
+        const existingOrders = JSON.parse(
+          localStorage.getItem("depod_orders") || "[]"
+        );
+        existingOrders.push(orderForPayment);
+        localStorage.setItem("depod_orders", JSON.stringify(existingOrders));
+      } catch (_) {}
+
+      // Initiate real payment session via backend (Odero)
+      try {
+        const session = await API.createOderoPaymentSession(orderForPayment.id);
+        const url =
+          (session && (session.payment_url || session.paymentUrl)) || null;
+        if (url) {
+          window.location.href = url;
+          return;
+        }
+        // Fallback if API didn't return URL
+        throw new Error("No payment_url");
+      } catch (e) {
+        console.warn("Payment session create failed, falling back:", e);
+        initiatePayment(orderForPayment);
+      }
+    } catch (error) {
+      console.error("Order creation failed:", error);
+      showNotification("Sifarişin yaradılmasında xəta baş verdi!", "error");
     }
-  } catch (error) {
-    console.error("Order creation failed:", error);
-    showNotification("Sifarişin yaradılmasında xəta baş verdi!", "error");
   }
-}
 
 // Payment integration
 function initiatePayment(order) {

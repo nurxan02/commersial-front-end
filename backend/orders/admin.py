@@ -16,12 +16,12 @@ class OrderItemInline(RichTextTabularInlineMixin, TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(RichTextAdminMixin, ModelAdmin):
-    list_display = ("id", "user_link", "status", "status_display", "total_price", "created_at", "estimated_delivery")
+    list_display = ("id", "user_link", "status", "status_display", "total_price", "student_discount_info", "created_at", "estimated_delivery")
     list_filter = ("status", "created_at")
     search_fields = ("user__email", "user__first_name", "user__last_name", "id")
     list_editable = ("status",)
     inlines = [OrderItemInline]
-    readonly_fields = ('pricing_snapshot',)
+    readonly_fields = ('pricing_snapshot', 'discount_details')
     actions = ['send_confirmation_email', 'send_delivery_email']
     
     def send_confirmation_email(self, request, queryset):
@@ -95,6 +95,38 @@ class OrderAdmin(RichTextAdminMixin, ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user', 'delivery_address')
+    
+    def student_discount_info(self, obj):
+        """Show if student discount was applied."""
+        student_discount = obj.student_discount_applied()
+        if student_discount:
+            return format_html(
+                '<span style="background: #10B981; color: white; padding: 2px 6px; border-radius: 8px; font-size: 11px;">Tələbə -%{}%</span>',
+                student_discount
+            )
+        return '-'
+    student_discount_info.short_description = 'Tələbə Endirimi'
+    
+    def discount_details(self, obj):
+        """Show detailed discount information."""
+        details = obj.get_discount_details()
+        if not details:
+            return "Məlumat yoxdur"
+            
+        info = []
+        if details['original_price']:
+            info.append(f"Orijinal qiymət: {details['original_price']} AZN")
+        if details['final_unit_price']:
+            info.append(f"Son qiymət: {details['final_unit_price']} AZN")
+        if details['product_discount']:
+            info.append(f"Məhsul endirimi: {details['product_discount']}%")
+        if details['student_discount']:
+            info.append(f"Tələbə endirimi: {details['student_discount']}%")
+        if details['user_student_status']:
+            info.append(f"İstifadəçi statusu: {details['user_student_status']}")
+            
+        return format_html('<br>'.join(info)) if info else "Məlumat yoxdur"
+    discount_details.short_description = 'Endirim Təfərrüatları'
 
 
 @admin.register(OrderItem)

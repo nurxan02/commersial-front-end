@@ -354,12 +354,10 @@
   <div class="dashboard-widget">
     <h2 class="widget-title">
       <span class="material-symbols-outlined">payments</span>
-      Satış həcmi (Toplam)
+      Satış həcmi (Çatdırılmış)
     </h2>
     <div class="widget-value" id="total-revenue">0 AZN</div>
-    <div class="widget-subtitle" id="revenue-subtitle">
-      Bu gün: 0 AZN | Bu ay: 0 AZN
-    </div>
+    <div class="widget-subtitle" id="revenue-subtitle">Son 30 gün: 0 AZN</div>
     <div class="chart-container">
       <canvas
         id="revenue-trend-chart"
@@ -372,12 +370,10 @@
   <div class="dashboard-widget">
     <h2 class="widget-title">
       <span class="material-symbols-outlined">attach_money</span>
-      Mənfəət (Pərakəndə - Alış)
+      Mənfəət (Çatdırılmış)
     </h2>
     <div class="widget-value" id="total-profit">0 AZN</div>
-    <div class="widget-subtitle" id="profit-subtitle">
-      Bu gün: 0 AZN | Bu ay: 0 AZN
-    </div>
+    <div class="widget-subtitle" id="profit-subtitle">Son 30 gün: 0 AZN</div>
     <div class="chart-container">
       <canvas id="profit-trend-chart" style="height: 100px !important"></canvas>
     </div>
@@ -387,7 +383,7 @@
   <div class="dashboard-widget">
     <h2 class="widget-title">
       <span class="material-symbols-outlined">trending_up</span>
-      Satış Sayları
+      Satış Sayları (Çatdırılmış)
     </h2>
     <div class="stats-grid">
       <div class="stat-item">
@@ -411,7 +407,7 @@
   <div class="dashboard-widget">
     <h2 class="widget-title">
       <span class="material-symbols-outlined">pie_chart</span>
-      Kateqoriya üzrə satış sayı
+      Kateqoriya üzrə satış (Çatdırılmış)
     </h2>
     <div class="chart-container">
       <canvas id="category-chart"></canvas>
@@ -422,7 +418,7 @@
   <div class="dashboard-widget" style="grid-column: 1 / -1">
     <h2 class="widget-title">
       <span class="material-symbols-outlined">analytics</span>
-      Aylıq Mənfəət Analizi
+      Aylıq Mənfəət Analizi (Çatdırılmış)
     </h2>
     <div class="chart-container">
       <canvas id="monthly-profit-chart"></canvas>
@@ -514,7 +510,7 @@
             data.total_revenue + " " + data.currency;
           document.getElementById(
             "revenue-subtitle"
-          ).textContent = `Bu gün: ${data.recent_revenue} ${data.currency}`;
+          ).textContent = `Son 30 gün: ${data.recent_revenue} ${data.currency}`;
 
           // Create mini trend chart with real data
           const ctx = document

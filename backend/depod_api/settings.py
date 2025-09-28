@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'offers',
     'cms',
     'reviews',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -196,6 +197,20 @@ FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://127.0.0.1:5500')
 # Payments
 PAYRIFF_BASE_URL = os.getenv('PAYRIFF_BASE_URL', 'https://api.payriff.com')
 PAYRIFF_SECRET_KEY = os.getenv('PAYRIFF_SECRET_KEY', '')
+
+# OderoPay configuration (sandbox-friendly defaults). Replace via environment in production.
+ODERO_BASE_URL = os.getenv('ODERO_BASE_URL', 'https://payment.odero.az')
+ODERO_API_KEY = os.getenv('ODERO_API_KEY', '')
+ODERO_MERCHANT_ID = os.getenv('ODERO_MERCHANT_ID', '')
+ODERO_SECRET_KEY = os.getenv('ODERO_SECRET_KEY', '')
+ODERO_CURRENCY = os.getenv('ODERO_CURRENCY', 'AZN')
+# Hosted checkout base (where the browser should be redirected). If not set, falls back to ODERO_BASE_URL.
+ODERO_PAYMENT_BASE_URL = os.getenv('ODERO_PAYMENT_BASE_URL', '')
+
+# Redirect URLs for payment outcomes. Default to frontend pages.
+ODERO_SUCCESS_URL = os.getenv('ODERO_SUCCESS_URL', f"{FRONTEND_BASE_URL}/order-success.html")
+ODERO_FAIL_URL = os.getenv('ODERO_FAIL_URL', f"{FRONTEND_BASE_URL}/order-failure.html")
+ODERO_CANCEL_URL = os.getenv('ODERO_CANCEL_URL', f"{FRONTEND_BASE_URL}/order-failure.html")
 
 # CORS
 CORS_ALLOW_CREDENTIALS = True

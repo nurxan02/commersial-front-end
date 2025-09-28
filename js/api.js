@@ -279,6 +279,25 @@
     return resp.json();
   }
 
+  // Payments API
+  async function createOderoPaymentSession(orderId) {
+    const token = localStorage.getItem("depod_access_token");
+    const resp = await fetch(
+      apiUrl("/api/payments/odero/create/"),
+      await withCsrfHeaders({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: "include",
+        body: JSON.stringify({ order_id: orderId }),
+      })
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json(); // { payment_id, payment_url }
+  }
+
   async function getStudentQr() {
     const token = localStorage.getItem("depod_access_token");
     const resp = await fetch(apiUrl(`/api/auth/student-qr/`), {
@@ -542,6 +561,7 @@
     deleteDeliveryAddress,
     setDefaultDeliveryAddress,
     getDeliveryAddressChoices,
+    createOderoPaymentSession,
     _url: apiUrl,
   };
 })();

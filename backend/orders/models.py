@@ -79,6 +79,24 @@ class Order(models.Model):
                 item_profit = (item.unit_price - item.product.cost_price) * item.quantity
                 total_profit += item_profit
         return total_profit
+    
+    def student_discount_applied(self):
+        """Check if student discount was applied to this order"""
+        if self.pricing_snapshot:
+            return self.pricing_snapshot.get('student_discount_applied')
+        return None
+    
+    def get_discount_details(self):
+        """Get detailed discount information for this order"""
+        if self.pricing_snapshot:
+            return {
+                'original_price': self.pricing_snapshot.get('original_price'),
+                'final_unit_price': self.pricing_snapshot.get('final_unit_price'),
+                'product_discount': self.pricing_snapshot.get('product_discount'),
+                'student_discount': self.pricing_snapshot.get('student_discount_applied'),
+                'user_student_status': self.pricing_snapshot.get('user_student_status')
+            }
+        return None
 
 
 class OrderItem(models.Model):
